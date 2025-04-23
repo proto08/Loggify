@@ -36,9 +36,8 @@ export async function GET(req: NextRequest) {
         }
 
         const result = await response.json();
-        console.log(result, ip);
 
-        return NextResponse.redirect(`${process.env.BASE_URL}/success`);
+        return NextResponse.json(result+ip);
     } catch (err) {
         console.error("Fetch error:", err);
         return NextResponse.redirect(`${process.env.BASE_URL}/error`);
