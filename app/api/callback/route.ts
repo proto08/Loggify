@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
 
     const ip = (req.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
+    const ua = req.headers.get("user-agent") ?? "unknown";
+    const lang = (req.headers.get("accept-language") ?? "en-US").split(",")[0];
 
     const url = new URL(req.url);
     const code = url.searchParams.get("code");
@@ -36,8 +38,8 @@ export async function GET(req: NextRequest) {
         }
 
         const result = await response.json();
-
-        return NextResponse.json(result+ip);
+        console.log(result)
+        return NextResponse.json({ result, ip, ua, lang });
     } catch (err) {
         console.error("Fetch error:", err);
         return NextResponse.redirect(`${process.env.BASE_URL}/error`);
