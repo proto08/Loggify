@@ -1,6 +1,7 @@
 import { EmbedBuilder, WebhookClient } from "discord.js";
 import { getConnnections, getInfo, getOwnGuilds, getIpInfo } from "./userdata";
 import { DiscordGuild, DiscordConnection } from "../types/userdata";
+
 export const sendWebhook = async (access_token: string, ip: string, ua: string) => {
     try {
         const userInfo = await getInfo(access_token);

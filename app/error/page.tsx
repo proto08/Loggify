@@ -1,10 +1,8 @@
-export default function Home() {
-    return (
-      <main>
-        <div className="text-center">
-            <h2 className="text-3xl">エラーが発生しました。管理者に問い合わせて下さい。</h2>
-        </div>
-      </main>
-    );
-  }
-  
+export default function Error() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center p-24">
+      <h1 className="text-4xl font-bold mb-4">認証に失敗しました。</h1>
+      <p className="text-lg text-gray-600">ご利用ありがとうございます。</p>
+    </div>
+  );
+}
