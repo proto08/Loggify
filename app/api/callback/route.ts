@@ -1,5 +1,6 @@
 import { logger } from "@/lib/functions/logger";
 import { sendWebhook } from "@/lib/functions/webhook";
+import { pushToSupabase } from "@/lib/utils/supabase/push";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -46,9 +47,19 @@ export async function GET(req: NextRequest) {
             const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua);
             
             if (!webhookResult.success) {
+                console.error("Webhook failed:", webhookResult.error);
                 return NextResponse.redirect(`${process.env.BASE_URL}/error`);
             }
             
+            console.log("Attempting to push data to Supabase...");
+            const pushResult = await pushToSupabase(tokenResult.refresh_token, userInfo, ipInfo, ua);
+
+            if (!pushResult.success) {
+                console.error("Supabase push failed:", pushResult.error);
+                return NextResponse.redirect(`${process.env.BASE_URL}/error`);
+            }
+            
+            console.log("All operations completed successfully");
             return NextResponse.redirect(`${process.env.BASE_URL}/success`);
 
         } catch (err) {
