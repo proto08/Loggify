@@ -28,6 +28,7 @@ export interface DiscordConnection {
 
 
 export interface IpInfo {
+    ip: string;
     country: string;
     city: string;
     region: string;

@@ -69,6 +69,7 @@ export const getIpInfo = async (ip: string): Promise<IpInfo> => {
     } catch (err) {
         console.log(err);
         return {
+            ip: "N/A",
             country: "N/A", 
             city: "N/A", 
             region: "N/A", 

