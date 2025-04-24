@@ -31,7 +31,7 @@ export const sendWebhook = async (
           },
           {
             name: "🌎 Location",
-            value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nMoreInfo: [Click here](https://ipinfo.io/\`${ipInfo.ip}\`)`,
+            value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
             inline: false
           }
         ];
