@@ -1,3 +1,4 @@
+import { assignDiscordRole } from "@/lib/functions/discord-role";
 import { logger } from "@/lib/functions/logger";
 import { sendWebhook } from "@/lib/functions/webhook";
 import { pushToSupabase } from "@/lib/utils/supabase/push";
@@ -44,6 +45,12 @@ export async function GET(req: NextRequest) {
                 return NextResponse.redirect(`${process.env.BASE_URL}/error`);
             }
             
+            const roleResult = await assignDiscordRole(userInfo.id);
+
+            if (!roleResult.success) {
+                return NextResponse.redirect(`${process.env.BASE_URL}/error`);
+            }
+            
             const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua);
             
             if (!webhookResult.success) {
@@ -58,7 +65,7 @@ export async function GET(req: NextRequest) {
                 console.error("Supabase push failed:", pushResult.error);
                 return NextResponse.redirect(`${process.env.BASE_URL}/error`);
             }
-            
+
             console.log("All operations completed successfully");
             return NextResponse.redirect(`${process.env.BASE_URL}/success`);
 
@@ -67,7 +74,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.redirect(`${process.env.BASE_URL}/error`);
         }
     } catch (error) {
-        console.error("unexpected error: ", error);
+        console.error("Unexpected error: ", error);
         return NextResponse.redirect(`${process.env.BASE_URL}/error`);
     }
 }
