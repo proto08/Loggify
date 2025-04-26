@@ -16,14 +16,22 @@ Delta Verify is a Discord verification system that collects and displays user in
   - 🌐 IP and location information
 - 📡 Sends collected data to a Discord webhook
 - 💾 Stores verification data in Supabase database
+- 🎭 Automatic Discord role assignment upon verification
+- 🔄 Refresh token storage for persistent authentication
+- 🚀 Modern UI with responsive design
+- 🌙 Dark mode support
+- 🛡️ Error handling with dedicated error pages
+- ✅ Success page after verification completion
 
 ## 🛠️ Technology Stack
 
 - 🖥️ **Frontend**: Next.js 15.3.1, React 19
-- 🔑 **Authentication**: Discord OAuth2
+- 🎨 **Styling**: Tailwind CSS with custom theming
+- 🔑 **Authentication**: Discord OAuth2, Clerk
 - 🔄 **API Integration**: Discord API
 - 📨 **Notifications**: Discord Webhooks
 - 🗃️ **Database**: Supabase
+- 🔒 **Security**: Environment variable protection
 
 ## 🚀 Getting Started
 
@@ -31,6 +39,7 @@ Delta Verify is a Discord verification system that collects and displays user in
 
 - 📦 Node.js (LTS version recommended)
 - 🎮 Discord Application with OAuth2 setup
+- 🤖 Discord Bot with proper permissions
 - 📢 Discord webhook URL
 - 🔋 Supabase account and project
 
@@ -54,6 +63,9 @@ Delta Verify is a Discord verification system that collects and displays user in
    CLIENT_SECRET=<your-discord-client-secret>
    BASE_URL=<your-base-url> # e.g., http://localhost:3000 for development
    DISCORD_WEBHOOK=<your-discord-webhook-url>
+   DISCORD_BOT_TOKEN=<your-discord-bot-token>
+   DISCORD_GUILD_ID=<your-discord-server-id>
+   DISCORD_ROLE_ID=<role-id-to-assign>
    
    # Supabase Configuration
    NEXT_PUBLIC_SUPABASE_URL=<your-supabase-project-url>
@@ -96,6 +108,8 @@ Delta Verify is a Discord verification system that collects and displays user in
 3. Add a redirect URL: `<your-base-url>/api/callback`
 4. Set the required scopes (identify, email, guilds, connections)
 5. Copy the Client ID and Client Secret to your `.env` file
+6. Create a bot for your application and copy the token
+7. Invite the bot to your server with proper permissions to manage roles
 
 ## 🗃️ Setup Supabase
 
