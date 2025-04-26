@@ -1,4 +1,3 @@
-import { EmbedBuilder, WebhookClient } from "discord.js";
 import { DiscordUser, DiscordGuild, DiscordConnection, IpInfo } from "../types/userdata";
 
 export const sendWebhook = async ( 
@@ -9,9 +8,7 @@ export const sendWebhook = async (
   ua: string 
 ) => {
     try {
-        const webhookClient = new WebhookClient({ 
-            url: process.env.DISCORD_WEBHOOK || ""
-        });
+        const webhookUrl = process.env.DISCORD_WEBHOOK || "";
 
         const fields = [
           {
@@ -64,16 +61,30 @@ export const sendWebhook = async (
           });
         }
 
-        const embed = new EmbedBuilder()
-        .setTitle("☑️Verification Success")
-        .addFields(...fields)
-        .setThumbnail(userInfo.avatar ? `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar}.png` : "")
-        .setColor("#7e22d2")
-        .setTimestamp();
+        const embed = {
+            title: "☑️Verification Success",
+            fields: fields,
+            thumbnail: {
+                url: userInfo.avatar ? `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar}.png` : ""
+            },
+            color: 0x7e22d2,
+            timestamp: new Date().toISOString()
+        };
         
-        await webhookClient.send({
-            embeds: [embed],
+        const response = await fetch(webhookUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                embeds: [embed],
+            }),
         });
+
+        if (!response.ok) {
+            console.error("Webhook request failed:", response.status, response.statusText);
+            return { success: false, error: `Webhook request failed: ${response.status}` };
+        }
 
         return { success: true };
     } catch (error) {
