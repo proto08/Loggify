@@ -33,4 +33,5 @@ export interface IpInfo {
     city: string;
     region: string;
     loc: string;
+    org: string;
 }

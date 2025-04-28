@@ -73,7 +73,8 @@ export const getIpInfo = async (ip: string): Promise<IpInfo> => {
             country: "N/A", 
             city: "N/A", 
             region: "N/A", 
-            loc: "N/A"
+            loc: "N/A",
+            org: "N/A"
         };
     }
 }

