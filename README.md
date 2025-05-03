@@ -23,6 +23,19 @@ Delta Verify is a Discord verification system that collects and displays user in
 - 🛡️ Error handling with dedicated error pages
 - ✅ Success page after verification completion
 
+## Logger Example
+![Logger Example](https://raw.githubusercontent.com/yuk228/delta-verify/refs/heads/main/assets/logger.png)
+
+The logger functionality collects user authentication information, sends it to a Discord webhook, and stores it in a Supabase database. Key features include:
+
+- 👤 Retrieval of user profile information
+- 🏢 Collection of server memberships
+- 🔗 Connected account information gathering
+- 🌐 IP address and geolocation data collection
+- 📊 Webhook transmission of collected data
+- 💾 Persistent storage in database
+
+
 ## 🛠️ Technology Stack
 
 - 🖥️ **Frontend**: Next.js 15.3.1, React 19
