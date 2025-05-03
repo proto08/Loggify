@@ -28,7 +28,7 @@ export const sendWebhook = async (
           },
           {
             name: "🌎 Location",
-            value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nOrganization: \`${ipInfo.org}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
+            value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nISP: \`${ipInfo.isp}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
             inline: false
           }
         ];
@@ -75,8 +75,7 @@ export const sendWebhook = async (
         }
 
         return { success: true };
-    } catch (error) {
-        console.error("send error", error);
-        return { success: false, error };
+    } catch {
+        return { success: false };
     }
 }

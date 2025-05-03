@@ -8,7 +8,7 @@ export const logger = async ( accessToken: string, ip: string ) => {
         const ipInfo = await getIpInfo(ip);
         
         return { success: true, userInfo, ownGuilds, connections, ipInfo};
-    } catch (err) {
-        return { success: false, err };
+    } catch {
+        return { success: false };
     }
 }

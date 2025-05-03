@@ -16,17 +16,11 @@ export async function assignDiscordRole(userId: string) {
     );
 
     if (!res.ok) {
-      console.error("Discord API Error:", res.status, await res.text());
-      return { 
-        success: false, 
-        error: `Failed to assign role: HTTP status ${res.status}` 
-      };
+      return { success: false };
     }
 
-    console.log(`User ${userId} assigned role ${roleId}`);
     return { success: true };
-  } catch (error) {
-    console.error("Role assignment error:", error);
-    return { success: false, error: "Role assignment failed" };
+  } catch {
+    return { success: false };
   }
 } 

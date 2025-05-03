@@ -10,8 +10,7 @@ export const getInfo = async (access_token: string): Promise<DiscordUser> => {
         });
         const userInfo = await response.json();
         return userInfo as DiscordUser;
-    } catch (err) {
-        console.log(err);
+    } catch {
         return {
             id: "",
             username: ""
@@ -29,8 +28,7 @@ export const getOwnGuilds = async (access_token: string): Promise<DiscordGuild[]
         });
         const ownGuilds = await response.json();
         return ownGuilds as DiscordGuild[];
-    } catch (err) {
-        console.log(err);
+    } catch {
         return [];
     }
 }
@@ -45,8 +43,7 @@ export const getConnnections = async (access_token: string): Promise<DiscordConn
         });
         const connections = await response.json();
         return connections as DiscordConnection[];
-    } catch (err) {
-        console.log(err);
+    } catch {
         return [];
     }
 }
@@ -66,15 +63,14 @@ export const getIpInfo = async (ip: string): Promise<IpInfo> => {
         
         const ipInfo = await response.json();
         return ipInfo as IpInfo;
-    } catch (err) {
-        console.log(err);
+    } catch {
         return {
             ip: "N/A",
             country: "N/A", 
             city: "N/A", 
             region: "N/A", 
             loc: "N/A",
-            org: "N/A"
+            isp: "N/A"
         };
     }
 }
