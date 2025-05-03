@@ -58,7 +58,7 @@ function Hero() {
             </h1>
 
             <p className="text-lg px-4 md:text-xl leading-relaxed tracking-tight text-muted-foreground max-w-2xl text-center">
-              Protect your servers from extinction! Get detailed logging, server backups, and member backups with Delta Verify
+              Protect your servers from extinction! Get detailed logging, server backups, and member backups with Loggify
             </p>
           </div>
           <div className="flex flex-row gap-3">
