@@ -35,3 +35,9 @@ export interface IpInfo {
     loc: string;
     isp: string;
 }
+
+export interface GpsData {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+}

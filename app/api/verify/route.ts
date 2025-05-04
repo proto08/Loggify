@@ -3,6 +3,7 @@ import { sendWebhook } from "@/lib/functions/webhook";
 import { NextRequest, NextResponse } from "next/server";
 import { pushToSupabase } from "@/lib/utils/supabase/push";
 import { assignDiscordRole } from "@/lib/functions/discord-role";
+import { GpsData } from "@/lib/types/userdata";
 
 const verifyToken = async (token: string) => {
     const verificationResponse = await fetch(
@@ -45,7 +46,7 @@ const getToken = async (code: string) => {
 
     return await token.json();
 };
-const verifyCode = async (code: string, req: NextRequest) => {
+const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
     try {
         const ip = (req.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
         const ua = req.headers.get("user-agent") ?? "unknown";
@@ -59,7 +60,7 @@ const verifyCode = async (code: string, req: NextRequest) => {
             throw new Error("Failed to log user");
         }
         
-        const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua);
+        const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua, gps);
         
         if (!webhookResult.success) {
             throw new Error("Failed to send webhook");
@@ -86,7 +87,7 @@ const verifyCode = async (code: string, req: NextRequest) => {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { token, code } = body;
+        const { token, code, gps } = body;
         
         if (!token) {
             return NextResponse.json({ error: "token not provided" }, { status: 400 });
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "token verification failed" }, { status: 400 });
         } 
         
-        const result = await verifyCode(code, req);
+        const result = await verifyCode(code, req, gps);
         if (!result.success) {
             return NextResponse.json({ error: "authentication failed" }, { status: 400 });
         }

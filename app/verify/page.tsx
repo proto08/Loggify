@@ -2,12 +2,33 @@
 
 import { Turnstile } from "next-turnstile";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { GpsData } from "@/lib/types/userdata";
+import { Button } from "@/components/ui/button";
+
 
 function VerifyContent() {
+    const [gpsData, setGpsData] = useState<GpsData | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const code = searchParams.get("code");
+
+    useEffect(() => {
+        const getLocation = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        setGpsData({
+                            latitude: position.coords.latitude ?? 0,
+                            longitude: position.coords.longitude ?? 0,
+                            accuracy: position.coords.accuracy ?? 0
+                        });
+                    }
+                );
+            }
+        };
+        getLocation();
+    }, []);
 
     const handleVerify = async (token: string) => {
         const res = await fetch('/api/verify', {      
@@ -15,11 +36,15 @@ function VerifyContent() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ token, code }),
+            body: JSON.stringify({ 
+                token, 
+                code,
+                gps: gpsData
+            }),
         })
         const result = await res.json();
         if (result.status === 200) {
-            router.push("/success"); 
+            router.push("/success");
         } else {
             router.push("/error");
         }
@@ -27,12 +52,17 @@ function VerifyContent() {
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
-            <h1 className="text-2xl font-bold mb-4">認証を完了してください</h1>
+            <h1 className="text-2xl font-bold mb-4">チェックマークが付いたら、<br></br>認証ボタンを押してください</h1>
             <div className="mt-4">
                 <Turnstile
                     siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY as string}
-                    onVerify={handleVerify}
                 />
+                <Button 
+                  className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground" 
+                  onClick={() => handleVerify("0x4AAAAAAABQ0000000000000000000000")}
+                >
+                    認証する
+                </Button>
             </div>
         </div>
     )
