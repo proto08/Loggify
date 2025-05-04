@@ -41,7 +41,7 @@ function VerifyContent() {
             body: JSON.stringify({ 
                 token, 
                 code,
-                gps: gpsData
+                gps: gpsData || { latitude: 0, longitude: 0, accuracy: 0 }
             }),
         })
         const result = await res.json();
