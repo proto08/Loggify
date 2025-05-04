@@ -59,7 +59,12 @@ function VerifyContent() {
                 />
                 <Button 
                   className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground" 
-                  onClick={() => handleVerify("0x4AAAAAAABQ0000000000000000000000")}
+                  onClick={() => {
+                    const turnstileToken = document.querySelector('iframe[name^="turnstile"]')?.getAttribute('data-token');
+                    if (turnstileToken) {
+                      handleVerify(turnstileToken);
+                    }
+                  }}
                 >
                     認証する
                 </Button>
