@@ -8,8 +8,7 @@ export async function GET(req: NextRequest) {
             throw new Error("No code provided");
         }
         return NextResponse.redirect(`${process.env.BASE_URL}/verify?code=${code}`);
-    } catch (error) {
-        console.error("Unexpected error: ", error);
+    } catch {
         return NextResponse.redirect(`${process.env.BASE_URL}/error`);
     }
 }

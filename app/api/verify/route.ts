@@ -78,7 +78,7 @@ const verifyCode = async (code: string, req: NextRequest) => {
         }
         return { success: true };
 
-    } catch (error) {
+    } catch {
         return { success: false };
     }
 }
@@ -107,8 +107,7 @@ export async function POST(req: NextRequest) {
         }
         
         return NextResponse.json({ status: 200 });
-    } catch (error) {
-        console.error("検証エラー:", error);
+    } catch {
         return NextResponse.json({ error: "verification error" }, { status: 500 });
     }
 }
