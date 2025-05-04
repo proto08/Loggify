@@ -13,7 +13,7 @@ const verifyToken = async (token: string) => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                secret: "1x0000000000000000000000000000000AA",
+                secret: process.env.TURNSTILE_SECRET_KEY as string,
                 response: token,
             }),
         }
