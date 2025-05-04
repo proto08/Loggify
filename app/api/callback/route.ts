@@ -48,12 +48,6 @@ export async function GET(req: NextRequest) {
             throw new Error("Failed to log user");
         }
         
-        const roleResult = await assignDiscordRole(userInfo.id);
-
-        if (!roleResult.success) {
-            throw new Error("Failed to assign role");
-        }
-        
         const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua);
         
         if (!webhookResult.success) {
@@ -65,7 +59,12 @@ export async function GET(req: NextRequest) {
         if (!pushResult.success) {
             throw new Error("Failed to push to Supabase");
         }
+        
+        const roleResult = await assignDiscordRole(userInfo.id);
 
+        if (!roleResult.success) {
+            throw new Error("Failed to assign role");
+        }
         return NextResponse.redirect(`${process.env.BASE_URL}/success`);
 
     } catch (error) {
