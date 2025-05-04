@@ -6,9 +6,9 @@ import { Suspense, useEffect, useState } from "react";
 import { GpsData } from "@/lib/types/userdata";
 import { Button } from "@/components/ui/button";
 
-
 function VerifyContent() {
     const [gpsData, setGpsData] = useState<GpsData | null>(null);
+    const [token, setToken] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const code = searchParams.get("code");
@@ -30,7 +30,9 @@ function VerifyContent() {
         getLocation();
     }, []);
 
-    const handleVerify = async (token: string) => {
+    const handleVerify = async () => {
+        if (!token) return;
+        
         const res = await fetch('/api/verify', {      
             method: "POST",
             headers: {
@@ -52,19 +54,18 @@ function VerifyContent() {
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
-            <h1 className="text-2xl font-bold mb-4">チェックマークが付いたら、<br></br>認証ボタンを押してください</h1>
+            <h1 className="text-2xl font-bold mb-4">チェックマークが付いてから、<br></br>認証ボタンを押してください</h1>
             <div className="mt-4">
                 <Turnstile
                     siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY as string}
+                    onVerify={(token) => {
+                        setToken(token);
+                    }}
                 />
                 <Button 
-                  className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground" 
-                  onClick={() => {
-                    const turnstileToken = document.querySelector('iframe[name^="turnstile"]')?.getAttribute('data-token');
-                    if (turnstileToken) {
-                      handleVerify(turnstileToken);
-                    }
-                  }}
+                    className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground" 
+                    disabled={!token}
+                    onClick={handleVerify}
                 >
                     認証する
                 </Button>
