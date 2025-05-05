@@ -74,7 +74,7 @@ function VerifyContent() {
             <h1 className="text-2xl font-bold mb-4">チェックマークが付いてから、<br></br>認証ボタンを押してください</h1>
             <div className="mt-4">
                 <Turnstile
-                    siteKey="1x00000000000000000000AA"
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY as string}
                     onVerify={(token) => {
                         setToken(token);
                     }}
