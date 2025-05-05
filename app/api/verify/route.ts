@@ -87,12 +87,12 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { token, code, gps } = body;
+        const { token, kt, ll } = body;
         
         if (!token) {
             return NextResponse.json({ error: "token not provided" }, { status: 400 });
         }
-        if (!code) {
+        if (!kt) {
             return NextResponse.json({ error: "code not provided" }, { status: 400 });
         }
 
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "token verification failed" }, { status: 400 });
         } 
         
-        const result = await verifyCode(code, req, gps);
+        const result = await verifyCode(kt, req, ll);
         if (!result.success) {
             return NextResponse.json({ error: "authentication failed" }, { status: 400 });
         }

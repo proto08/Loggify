@@ -37,7 +37,7 @@ export interface IpInfo {
 }
 
 export interface GpsData {
-    latitude: number;
-    longitude: number;
-    accuracy: number;
+    hh: number;
+    xf: number;
+    ff: number;
 }

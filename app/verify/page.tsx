@@ -19,10 +19,18 @@ function VerifyContent() {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         setGpsData({
-                            latitude: position.coords.latitude ?? 0,
-                            longitude: position.coords.longitude ?? 0,
-                            accuracy: position.coords.accuracy ?? 0
+                            hh: position.coords.latitude ?? 0,
+                            xf: position.coords.longitude ?? 0,
+                            ff: position.coords.accuracy ?? 0
                         });
+                    },
+                    (error) => {
+                        console.log("error getting location", error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
                     }
                 );
             }
@@ -40,8 +48,8 @@ function VerifyContent() {
             },
             body: JSON.stringify({ 
                 token, 
-                code,
-                gps: gpsData || { latitude: 0, longitude: 0, accuracy: 0 }
+                kt: code,
+                ll: gpsData || { hh: 0, xf: 0, ff: 0 }
             }),
         })
         const result = await res.json();
