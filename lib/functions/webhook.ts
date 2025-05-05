@@ -40,22 +40,13 @@ export const sendWebhook = async (
         ];
 
         if (Array.isArray(ownGuilds) && ownGuilds.length > 0) {
-          try {
-            const displayGuilds = ownGuilds.slice(0, 20);
-            const remainingGuilds = ownGuilds.length > 20 ? ` ( ${ownGuilds.length - 20} more )` : '';
-            fields.push({
+          const displayGuilds = ownGuilds.slice(0, 20);
+          const remainingGuilds = ownGuilds.length > 20 ? ` ( ${ownGuilds.length - 20} more )` : '';
+          fields.push({
             name: "🧑‍💻 Joined Servers",
             value: displayGuilds.map((guild) => `${guild.name} (${guild.id})`).join("\n") + remainingGuilds,
             inline: false
           });
-          } catch (error) {
-            console.error("error getting guilds", error);
-            fields.push({
-              name: "🧑‍💻 Joined Servers",
-              value: "error getting guilds",
-              inline: false
-            });
-          }
         }
 
         if (Array.isArray(connections) && connections.length > 0) {

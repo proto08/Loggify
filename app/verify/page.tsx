@@ -12,6 +12,13 @@ function VerifyContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const code = searchParams.get("code");
+    const gfe = searchParams.get("gfe");
+
+    useEffect(() => {
+        if (!code || !gfe) {
+            router.push("/error");
+        }
+    }, [code, gfe, router]);
 
     useEffect(() => {
         const getLocation = () => {
@@ -40,14 +47,16 @@ function VerifyContent() {
 
     const handleVerify = async () => {
         if (!token) return;
-        
+        if (!gfe) return;
+
         const res = await fetch('/api/verify', {      
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-                token, 
+                token,
+                ct: gfe,
                 kt: code,
                 ll: gpsData || { hh: 0, xf: 0, ff: 0 }
             }),
@@ -65,7 +74,7 @@ function VerifyContent() {
             <h1 className="text-2xl font-bold mb-4">チェックマークが付いてから、<br></br>認証ボタンを押してください</h1>
             <div className="mt-4">
                 <Turnstile
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY as string}
+                    siteKey="1x00000000000000000000AA"
                     onVerify={(token) => {
                         setToken(token);
                     }}
