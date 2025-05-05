@@ -10,7 +10,7 @@ export default async function Home() {
                     <div className="space-y-4">
                         <p className="text-sm sm:text-base">DeltaVerify（以下，「当社」といいます。）は，本ウェブサイト上で提供するサービス（以下,「本サービス」といいます。）における，ユーザーの個人情報の取扱いについて，以下のとおりプライバシーポリシー（以下，「本ポリシー」といいます。）を定めます。</p>
                         <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">第1条（個人情報）</h2>
-                        <p className="space-y-2 ml-4 text-sm sm:text-base">coming soon</p>
+                        <p className="space-y-2 ml-4 text-sm sm:text-base"></p>
                         <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">第2条（プライバシーポリシーの変更）</h2>
                         <ol className="list-decimal list-inside space-y-2 ml-4 text-sm sm:text-base">
                             <li>本ポリシーの内容は，法令その他本ポリシーに別段の定めのある事項を除いて，ユーザーに通知することなく，変更することができるものとします。</li>

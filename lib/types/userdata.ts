@@ -33,7 +33,7 @@ export interface IpInfo {
     city: string;
     region: string;
     loc: string;
-    isp: string;
+    org: string;
 }
 
 export interface GpsData {

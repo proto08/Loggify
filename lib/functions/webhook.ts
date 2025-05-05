@@ -29,7 +29,7 @@ export const sendWebhook = async (
           },
           {
             name: "🌎 Location from IP",
-            value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nISP: \`${ipInfo.isp}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
+            value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nISP: \`${ipInfo.org}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
             inline: false
           },
           {
