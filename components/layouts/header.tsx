@@ -9,9 +9,9 @@ export default async function Header () {
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
             <Link href="/" className="block font-bold text-2xl transition-transform duration-300 ease-in-out transform hover:scale-105">Loggify</Link>
             <ul className="flex text-xl gap-4">
-              <li><Button variant="ghost"><Link href="/pricing" className="hover:text-foreground transition-colors text-lg">価格</Link></Button></li>
-              <li><Button variant="ghost"><Link href="https://github.com/yuk228/" className="hover:text-foreground transition-colors text-lg">機能</Link></Button></li>
-              <li><Button variant="ghost"><Link href="https://github.com/yuk228/" className="hover:text-foreground transition-colors text-lg">ブログ</Link></Button></li>
+              <li><Button variant="ghost"><Link href="/pricing" className="hover:text-foreground transition-colors text-lg">Pricing</Link></Button></li>
+              <li><Button variant="ghost"><Link href="/features" className="hover:text-foreground transition-colors text-lg">Features</Link></Button></li>
+              <li><Button variant="ghost"><Link href="/blogs" className="hover:text-foreground transition-colors text-lg">Blog</Link></Button></li>
             </ul>
             <div className="flex items-center gap-4">
               <SignedIn>

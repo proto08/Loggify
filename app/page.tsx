@@ -22,10 +22,11 @@ const features = [
   },
 ];
 
+
 export default function Home() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-900 text-white">
-      <section className="container mx-auto px-4 pt-[350px] pb-16 text-center relative">
+      <section className="container mx-auto px-4 pt-[300px] pb-16 text-center relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent"></div>      
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -83,11 +84,12 @@ export default function Home() {
       <section className="">
         <div className="container mx-auto px-4 py-16 text-center relative">
           <h2 className="text-4xl md:text-5xl font-bold mb-8 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-300 to-white">
-            Advanced Features
+            24/7 Support For All Users
           </h2>
           <p className="text-xl md:text-2xl text-gray-400 mb-12 tracking-wide max-w-2xl mx-auto leading-relaxed">
-            Loggify is a Advanced Discord Logger for Server Admins.
+            We support any anonymous chat apps for your support needs.
           </p>
+
         </div>
       </section>
     </main>
