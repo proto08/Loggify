@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Delta Verify",
-  description: "Protect your servers from extinction! Get detailed logging, server backups, and member backups with Delta Verify",
+  title: "Loggify - The Best Discord Logging Service",
+  description: "Loggify is a Advanced Discord Logger for Server Admins.",
 };
 
 export default function RootLayout({

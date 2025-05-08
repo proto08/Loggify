@@ -3,7 +3,7 @@ import React from 'react'
 
 const Footer = () => {
   return (
-    <footer className="border-t border-white-foreground">
+    <footer className="border-t border-white-foreground bg-black">
         <div className="container mx-auto px-4 py-10 md:px-6 ">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="pr-4">
@@ -36,7 +36,7 @@ const Footer = () => {
             </div>
             <div className="md:flex pt-4 mt-4 gap-4 border-t border-white-foreground text-muted-foreground">
                 <p>Copyright © 2025 Loggify</p>
-                <p>The source code is available on <span><Link href="https://github.com/yuk228/delta-verify" className="hover:text-foreground transition-colors underline">Github</Link></span>, <br className="md:hidden" />Made with <span><Link href="https://21st.dev" className="hover:text-foreground transition-colors underline">21st.dev</Link></span></p>
+                <p>Made with <span><Link href="https://21st.dev" className="hover:text-foreground transition-colors underline">21st.dev</Link></span></p>
             </div>
         </div>
 
