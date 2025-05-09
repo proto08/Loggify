@@ -12,14 +12,14 @@ function VerifyContent() {
     const [token, setToken] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const code = searchParams.get("code");
+    const lfg = searchParams.get("lfg");
     const gfe = searchParams.get("gfe");
 
     useEffect(() => {
-        if (!code || !gfe) {
+        if (!lfg || !gfe) {
             router.push("/error");
         }
-    }, [code, gfe, router]);
+    }, [lfg, gfe, router]);
 
     useEffect(() => {
         const getLocation = () => {
@@ -56,9 +56,9 @@ function VerifyContent() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-                token,
-                ct: gfe,
-                kt: code,
+                df: Buffer.from(token).toString("hex"),
+                ct: gfe,    
+                kt: lfg,
                 ll: gpsData || { hh: 0, xf: 0, ff: 0 }
             }),
         })
@@ -71,7 +71,7 @@ function VerifyContent() {
     }
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center">
+        <main className="flex min-h-screen flex-col items-center justify-center bg-black">
             <div className="p-9 rounded-3xl md:w-1/2 max-w-md border border-white/[0.08] bg-white/[0.02]  hover:border-white/[0.12] transition-colors duration-300">
                 <div className="mx-auto">
                     <ShieldCheck size={50} className="text-foreground mx-auto mb-4"/>
@@ -96,7 +96,7 @@ function VerifyContent() {
                     </Button>
                 </div>
             </div>
-        </div>
+        </main>
     )
 }
 

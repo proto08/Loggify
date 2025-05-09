@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pushToSupabase } from "@/lib/utils/supabase/push";
 import { assignDiscordRole } from "@/lib/functions/discord-role";
 import { GpsData } from "@/lib/types/userdata";
+import { deobf, deobf2 } from "@/lib/functions/anti-scraping";
 
 const verifyToken = async (token: string) => {
     const verificationResponse = await fetch(
@@ -14,7 +15,7 @@ const verifyToken = async (token: string) => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                secret: process.env.TURNSTILE_SECRET_KEY as string,
+                secret: process.env.TURNSTILE_SECRET_KEY,
                 response: token,
             }),
         }
@@ -90,29 +91,36 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
 
 export async function POST(req: NextRequest) {
     try {
+        const ip = (req.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
         const body = await req.json();
-        const { token, kt, ll } = body;
+        const { df, ct, kt, ll } = body;
         
-        if (!token) {
-            return NextResponse.json({ error: "token not provided" }, { status: 400 });
+        if (!df || !ct || !kt || !ll) {
+            console.log("token not provided");
+            return NextResponse.json({ error: "400" }, { status: 400 });
         }
-        if (!kt) {
-            return NextResponse.json({ error: "code not provided" }, { status: 400 });
+        
+        if (ip !== deobf(ct)) {
+            console.log("ip mismatch");
+            return NextResponse.json({ error: "400" }, { status: 400 });
         }
 
-        const verificationResult = await verifyToken(token);
+        const verificationResult = await verifyToken(Buffer.from(df, "hex").toString());
         
         if (!verificationResult.success) {
-            return NextResponse.json({ error: "token verification failed" }, { status: 400 });
+            console.log("token verification failed");
+            return NextResponse.json({ error: "400" }, { status: 400 });
         } 
         
-        const result = await verifyCode(kt, req, ll);
+        const result = await verifyCode(deobf2(kt), req, ll);
         if (!result.success) {
-            return NextResponse.json({ error: "authentication failed" }, { status: 400 });
+            console.log("authentication failed");
+            return NextResponse.json({ error: "400" }, { status: 400 });
         }
         
         return NextResponse.json({ status: 200 });
     } catch {
-        return NextResponse.json({ error: "verification error" }, { status: 500 });
+        console.log("internal server error");
+        return NextResponse.json({ error: "500" }, { status: 500 });
     }
 }
