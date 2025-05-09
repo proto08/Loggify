@@ -61,25 +61,25 @@ export default function Home() {
           </motion.div>
       </section>
       <section className="container mx-auto px-4 py-16 text-center relative">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {features.map((feature, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.2 }}
-            className="group p-9 rounded-3xl border border-white/[0.08] bg-white/[0.02]  hover:border-white/[0.12] transition-colors duration-300 "
-          >
-            <div className="w-12 h-12 rounded-full bg-gray-500/10 flex items-center justify-center mb-4 text-gray-400">
-                {feature.icon}
-            </div>
-            <h3 className="text-xl font-semibold text-white text-left mb-2">
-                {feature.title}
-            </h3>
-            <p className="text-gray-400 text-left">{feature.description}</p>
-          </motion.div>
-        ))}
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.2 }}
+              className="group p-9 rounded-3xl border border-white/[0.08] bg-white/[0.02]  hover:border-white/[0.12] transition-colors duration-300"
+            >
+              <div className="w-12 h-12 rounded-full bg-gray-500/10 flex items-center justify-center mb-4 text-gray-400">
+                  {feature.icon}
+              </div>
+              <h3 className="text-xl font-semibold text-white text-left mb-2">
+                  {feature.title}
+              </h3>
+              <p className="text-gray-400 text-left">{feature.description}</p>
+            </motion.div>
+          ))}
+        </div>
       </section>
       <section className="">
         <div className="container mx-auto px-4 py-16 text-center relative">

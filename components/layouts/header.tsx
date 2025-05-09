@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button"
-import { SignedIn, UserButton } from "@clerk/nextjs"
 import Link from 'next/link'
 import React from 'react'
 
@@ -14,9 +13,6 @@ export default async function Header () {
               <li><Button variant="ghost"><Link href="/blogs" className="hover:text-foreground transition-colors text-lg">Blog</Link></Button></li>
             </ul>
             <div className="flex items-center gap-4">
-              <SignedIn>
-                <UserButton />
-              </SignedIn>
               <Link href="/dashboard"><Button>Dashboard</Button></Link>
             </div>
         </div>

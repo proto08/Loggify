@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { GpsData } from "@/lib/types/userdata";
 import { Button } from "@/components/ui/button";
+import { ShieldCheck } from "lucide-react";
 
 function VerifyContent() {
     const [gpsData, setGpsData] = useState<GpsData | null>(null);
@@ -71,21 +72,29 @@ function VerifyContent() {
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
-            <h1 className="text-2xl font-bold mb-4">チェックマークが付いてから、<br></br>認証ボタンを押してください</h1>
-            <div className="mt-4">
-                <Turnstile
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY as string}
-                    onVerify={(token) => {
-                        setToken(token);
-                    }}
-                />
-                <Button 
-                    className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground" 
-                    disabled={!token}
-                    onClick={handleVerify}
-                >
-                    認証する
-                </Button>
+            <div className="p-9 rounded-3xl w-1/2 max-w-md border border-white/[0.08] bg-white/[0.02]  hover:border-white/[0.12] transition-colors duration-300">
+                <div className="mx-auto">
+                    <ShieldCheck size={50} className="text-foreground mx-auto mb-4"/>
+                    <h1 className="text-2xl font-bold mb-4 text-center">Complete Verification</h1>
+                    <h1 className="text-xl font-bold mb-4 text-center">認証を完了してください</h1>
+                </div>
+                <div className="mt-4">
+                    <div className="flex justify-center">
+                        <Turnstile
+                            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY as string}
+                            onVerify={(token) => {
+                                setToken(token);
+                            }}
+                        />
+                    </div>
+                    <Button 
+                        className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground" 
+                        disabled={!token}
+                        onClick={handleVerify}
+                    >
+                        Verify / 認証する
+                    </Button>
+                </div>
             </div>
         </div>
     )
