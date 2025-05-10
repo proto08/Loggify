@@ -10,8 +10,10 @@ import { ShieldCheck } from "lucide-react";
 function VerifyContent() {
     const [gpsData, setGpsData] = useState<GpsData | null>(null);
     const [token, setToken] = useState<string | null>(null);
+
     const router = useRouter();
     const searchParams = useSearchParams();
+    
     const lfg = searchParams.get("lfg");
     const gfe = searchParams.get("gfe");
 

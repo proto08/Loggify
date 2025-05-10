@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
         if (!code) {
             throw new Error("No code provided");
         }
+        
         const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
         const obfuscatedIp = obf(ip)
         const obfuscatedCode = obf2(code)

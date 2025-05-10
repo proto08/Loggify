@@ -89,7 +89,6 @@ export default function Home() {
           <p className="text-xl md:text-2xl text-gray-400 mb-12 tracking-wide max-w-2xl mx-auto leading-relaxed">
             We support any anonymous chat apps for your support needs.
           </p>
-
         </div>
       </section>
     </main>
