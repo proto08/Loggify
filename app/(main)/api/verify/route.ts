@@ -5,8 +5,7 @@ import { pushToSupabase } from "@/lib/utils/supabase/push";
 import { assignDiscordRole } from "@/lib/functions/discord-role";
 import { GpsData } from "@/lib/types/userdata";
 import { deobf, deobf2 } from "@/lib/functions/anti-scraping";
-import { isValidIP } from "@/lib/functions/validation";
-import { isValidUserAgent } from "@/lib/functions/validation";
+import { isValidGps, isValidIP, isValidUserAgent } from "@/lib/functions/validation";
 
 const verifyToken = async (token: string) => {
     const verificationResponse = await fetch(
@@ -52,7 +51,7 @@ const getToken = async (code: string) => {
 const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
     try {
         const ip = (req.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
-        const ua = req.headers.get("user-agent") ?? "unknown";
+        const ua = req.headers.get("user-agent") ?? "";
 
 
         const tokenResult = await getToken(code);
@@ -96,12 +95,14 @@ export async function POST(req: NextRequest) {
         const ip = (req.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
         const ua = req.headers.get("user-agent") ?? "";
 
-        if (!isValidIP(ip) || !isValidUserAgent(ua)) {
-            throw new Error("Invalid IP or User-Agent");
-        }
-        
         const body = await req.json();
         const { df, ct, kt, ll } = body;
+
+        if (!isValidIP(ip) || !isValidUserAgent(ua) || !isValidGps(ll)) {
+            throw new Error("Invalid IP or User-Agent or GPS");
+        }
+
+
         
         if (!df || !ct || !kt || !ll) {
             console.log("token not provided");

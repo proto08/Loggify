@@ -1,3 +1,5 @@
+import { GpsData } from "../types/userdata";
+
 export function isValidIP(ip: string): boolean {
     const ipRegex = /^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/;
     return ip.match(ipRegex) !== null;
@@ -40,4 +42,17 @@ export function isValidUserAgent(userAgent: string): boolean {
   );
   
   return hasValidBrowserPattern && !hasSuspiciousPattern;
+}
+
+export function isValidGps(gps: GpsData): boolean {
+    if (gps.ff < 0 || gps.ff > 100) {
+        return false;
+    }
+    if (gps.hh < -90 || gps.hh > 90) {
+        return false;
+    }
+    if (gps.xf < -180 || gps.xf > 180) {
+        return false;
+    }
+    return true;
 }
