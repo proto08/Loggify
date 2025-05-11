@@ -5,6 +5,8 @@ import { pushToSupabase } from "@/lib/utils/supabase/push";
 import { assignDiscordRole } from "@/lib/functions/discord-role";
 import { GpsData } from "@/lib/types/userdata";
 import { deobf, deobf2 } from "@/lib/functions/anti-scraping";
+import { isValidIP } from "@/lib/functions/validation";
+import { isValidUserAgent } from "@/lib/functions/validation";
 
 const verifyToken = async (token: string) => {
     const verificationResponse = await fetch(
@@ -92,6 +94,12 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
 export async function POST(req: NextRequest) {
     try {
         const ip = (req.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
+        const ua = req.headers.get("user-agent") ?? "";
+
+        if (!isValidIP(ip) || !isValidUserAgent(ua)) {
+            throw new Error("Invalid IP or User-Agent");
+        }
+        
         const body = await req.json();
         const { df, ct, kt, ll } = body;
         
