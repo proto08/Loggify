@@ -1,6 +1,6 @@
-# 🔰 Delta Verify
+# 🔰 Loggify
 
-Delta Verify is a Discord verification system that collects and displays user information through a webhook and stores data in Supabase.
+Loggify is an advanced Discord logging system that collects and displays user information through webhooks and stores data in Supabase.
 
 ## ⚠️ Disclaimer
 
@@ -9,42 +9,42 @@ Delta Verify is a Discord verification system that collects and displays user in
 ## ✨ Features
 
 - 🔐 OAuth2 authentication with Discord
-- 📊 Collects user data including:
+- 📊 Comprehensive data collection including:
   - 👤 User profile information
   - 🏢 Server memberships
   - 🔗 Connected accounts
   - 🌐 IP and location information
-- 📡 Sends collected data to a Discord webhook
-- 💾 Stores verification data in Supabase database
+  - 📱 Browser fingerprinting
+- 📡 Real-time data transmission to Discord webhooks
+- 💾 Secure data storage in Supabase database
 - 🎭 Automatic Discord role assignment upon verification
 - 🔄 Refresh token storage for persistent authentication
 - 🚀 Modern UI with responsive design
-- 🌙 Dark mode support
-- 🛡️ Error handling with dedicated error pages
-- ✅ Success page after verification completion
+- 🌙 Dark mode interface
+- 🛡️ Robust error handling with dedicated error pages
+- ✅ Confirmation page after verification completion
 
 ## Logger Example
-![Logger Example](https://raw.githubusercontent.com/yuk228/delta-verify/refs/heads/main/assets/logger.png)
+![Logger Example](https://raw.githubusercontent.com/yuk228/loggify/refs/heads/main/assets/logger.png)
 
-The logger functionality collects user authentication information, sends it to a Discord webhook, and stores it in a Supabase database. Key features include:
+The logging functionality collects comprehensive user information, transmits it to Discord webhooks, and stores it securely in a Supabase database. Key capabilities include:
 
-- 👤 Retrieval of user profile information
-- 🏢 Collection of server memberships
-- 🔗 Connected account information gathering
-- 🌐 IP address and geolocation data collection
-- 📊 Webhook transmission of collected data
-- 💾 Persistent storage in database
-
+- 👤 Detailed user profile data collection
+- 🏢 Complete server membership information
+- 🔗 Connected account tracking
+- 🌐 IP address and precise geolocation data
+- 📊 Real-time webhook notifications
+- 💾 Persistent and searchable database storage
 
 ## 🛠️ Technology Stack
 
 - 🖥️ **Frontend**: Next.js 15.3.1, React 19
 - 🎨 **Styling**: Tailwind CSS with custom theming
-- 🔑 **Authentication**: Discord OAuth2, Clerk
+- 🔑 **Authentication**: Discord OAuth2, Nextauth(auth.js)
 - 🔄 **API Integration**: Discord API
 - 📨 **Notifications**: Discord Webhooks
 - 🗃️ **Database**: Supabase
-- 🔒 **Security**: Environment variable protection
+- 🔒 **Security**: Environment variable protection, Turnstile verification
 
 ## 🚀 Getting Started
 
@@ -55,13 +55,14 @@ The logger functionality collects user authentication information, sends it to a
 - 🤖 Discord Bot with proper permissions
 - 📢 Discord webhook URL
 - 🔋 Supabase account and project
+- 🔍 Cloudflare Turnstile account
 
 ### 📥 Installation
 
 1. Clone the repository
    ```
-   git clone https://github.com/yuk228/delta-verify.git
-   cd delta-verify
+   git clone https://github.com/yourusername/loggify.git
+   cd loggify
    ```
 
 2. Install dependencies
@@ -83,6 +84,10 @@ The logger functionality collects user authentication information, sends it to a
    # Supabase Configuration
    NEXT_PUBLIC_SUPABASE_URL=<your-supabase-project-url>
    SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
+   
+   # Turnstile Configuration
+   TURNSTILE_SECRET_KEY=<your-turnstile-secret-key>
+   NEXT_PUBLIC_TURNSTILE_SITE_KEY=<your-turnstile-site-key>
    ```
 
 4. Set up your Supabase database:
@@ -97,6 +102,7 @@ The logger functionality collects user authentication information, sends it to a
      - `ip` (text)
      - `user_agent` (text)
      - `refresh_token` (text)
+     - `gps_data` (jsonb, nullable)
      - `created_at` (timestamp with timezone)
 
 5. Start the development server
