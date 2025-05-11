@@ -32,7 +32,7 @@ export default function RootLayout({
         <ThemeProvider>
           <SidebarProvider>
             <AppSidebar />
-            <main className="min-h-screen">
+            <main className="min-h-screen w-full">
                 <SidebarTrigger />
                 {children}
             </main>

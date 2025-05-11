@@ -42,7 +42,7 @@ export const pushToSupabase = async (
         });
         
         if (error) {
-            console.error("Supabase insertion error:", error);
+            console.log("Supabase insertion error:", error);
             return { success: false, error };
         }
         

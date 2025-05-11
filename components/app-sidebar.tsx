@@ -1,4 +1,5 @@
-import { Calendar, ChevronUp, Home, Inbox, Search, Settings } from "lucide-react"
+import { ChevronUp, Home, Inbox, Logs, ShieldCheck, UserCheck } from "lucide-react"
+import Link from "next/link";
 
 import {
   Sidebar,
@@ -6,16 +7,18 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Separator } from "./ui/separator";
+import AccountSetting from "./account-setting";
 
-// Menu items.
+
 const items = [
   {
     title: "Dashboard",
@@ -29,18 +32,18 @@ const items = [
   },
   {
     title: "Verified Members",
-    url: "/dashboard/verified-members",
-    icon: Calendar,
+    url: "/dashboard/members",
+    icon: UserCheck,
   },
   {
     title: "Backups",
     url: "/dashboard/backups",
-    icon: Search,
+    icon: ShieldCheck,
   },
   {
     title: "BlackList",
     url: "/dashboard/blacklist",
-    icon: Settings,
+    icon: Logs,
   },
 ]
 
@@ -48,18 +51,21 @@ export async function AppSidebar() {
     const session = await auth();
   return (
     <Sidebar>
+      <SidebarHeader>
+        <Link href="/" className="block font-bold text-2xl text-center transition-transform duration-300 ease-in-out transform hover:scale-105">Loggify</Link>
+      </SidebarHeader>
+      <Separator />
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -67,6 +73,7 @@ export async function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+        <Separator />
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -78,7 +85,7 @@ export async function AppSidebar() {
                         <AvatarFallback>
                             {session?.user?.name?.charAt(0)}
                         </AvatarFallback>
-                    </Avatar> {session?.user?.name}
+                    </Avatar> {session?.user?.name} {session?.user?.email}
                     <ChevronUp className="ml-auto" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -87,13 +94,18 @@ export async function AppSidebar() {
                   className="w-[--radix-popper-anchor-width]"
                 >
                   <DropdownMenuItem>
-                    <span>Account</span>
+                    <AccountSetting />
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <span>Billing</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <span>Sign out</span>
+                    <form action={async () => {
+                      "use server";
+                      await signOut();
+                    }}>
+                      <button type="submit">Sign out</button>
+                    </form>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
