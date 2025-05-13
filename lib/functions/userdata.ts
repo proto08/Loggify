@@ -74,3 +74,14 @@ export const getIpInfo = async (ip: string): Promise<IpInfo> => {
         };
     }
 }
+
+export const getAddress = async (lat: number, lon: number): Promise<string> => {
+    try {
+        const response = await fetch(`https://www.gps-coordinates.net/geoproxy?q=${lat} ${lon}&key=9416bf2c8b1d4751be6a9a9e94ea85ca&no_annotations=1&language=ja`)
+        const data = await response.json()
+        return data["results"][0]["formatted"]
+    } catch {
+        return "N/A"
+    }
+}
+

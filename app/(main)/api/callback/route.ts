@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
             throw new Error("No code provided");
         }
         
-        const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
+        const ip = req.headers.get("x-forwarded-for") ?? "";
         const ua = req.headers.get("user-agent") ?? "";
 
         if (!isValidIP(ip) || !isValidUserAgent(ua)) {

