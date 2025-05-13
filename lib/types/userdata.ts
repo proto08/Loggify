@@ -41,3 +41,15 @@ export interface GpsData {
     xf: number;
     ff: number;
 }
+
+export interface VPNData {
+    input: string;
+    data: {
+      vpn: boolean;
+      proxy: boolean;
+      tor: boolean;
+      relay: boolean;
+      hosting: boolean;
+      service: string;
+    }
+  }

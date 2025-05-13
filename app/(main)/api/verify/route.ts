@@ -6,6 +6,7 @@ import { assignDiscordRole } from "@/lib/functions/discord-role";
 import { GpsData } from "@/lib/types/userdata";
 import { deobf, deobf2 } from "@/lib/functions/anti-scraping";
 import { isValidGps, isValidIP, isValidUserAgent } from "@/lib/functions/validation";
+import { isAnonymouse } from "@/lib/functions/antivpn";
 
 const verifyToken = async (token: string) => {
     const verificationResponse = await fetch(
@@ -85,7 +86,8 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
         }
         return { success: true };
 
-    } catch {
+    } catch (error) {
+        console.log(error)
         return { success: false };
     }
 }
@@ -102,7 +104,9 @@ export async function POST(req: NextRequest) {
             throw new Error("Invalid IP or User-Agent or GPS");
         }
 
-
+        if (await isAnonymouse(ip)) {
+            throw new Error("Anonymouse Detected");
+        }
         
         if (!df || !ct || !kt || !ll) {
             console.log("token not provided");
@@ -128,8 +132,8 @@ export async function POST(req: NextRequest) {
         }
         
         return NextResponse.json({ status: 200 });
-    } catch {
-        console.log("internal server error");
+    } catch (error) {
+        console.log("Error: ", error);
         return NextResponse.json({ error: "500" }, { status: 500 });
     }
 }
