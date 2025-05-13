@@ -61,7 +61,7 @@ function VerifyContent() {
                 df: Buffer.from(token).toString("hex"),
                 ct: gfe,    
                 kt: lfg,
-                ll: gpsData || { hh: 0, xf: 0, ff: 0 }
+                ll: Buffer.from(JSON.stringify(gpsData || { hh: 0, xf: 0, ff: 0 })).toString("hex")
             }),
         })
         const result = await res.json();

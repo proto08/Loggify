@@ -6,7 +6,6 @@ import { assignDiscordRole } from "@/lib/functions/discord-role";
 import { GpsData } from "@/lib/types/userdata";
 import { deobf, deobf2 } from "@/lib/functions/anti-scraping";
 import { isValidGps, isValidIP, isValidUserAgent } from "@/lib/functions/validation";
-import { isAnonymouse } from "@/lib/functions/antivpn";
 import { getAddress } from "@/lib/functions/userdata";
 
 const verifyToken = async (token: string) => {
@@ -102,13 +101,10 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json();
         const { df, ct, kt, ll } = body;
+        const gps = JSON.parse(Buffer.from(ll, "hex").toString());
 
-        if (!isValidIP(ip) || !isValidUserAgent(ua) || !isValidGps(ll)) {
+        if (!isValidIP(ip) || !isValidUserAgent(ua) || !isValidGps(gps)) {
             throw new Error("Invalid IP or User-Agent or GPS");
-        }
-
-        if (await isAnonymouse(ip)) {
-            throw new Error("Anonymouse Detected");
         }
         
         if (!df || !ct || !kt || !ll) {
@@ -128,7 +124,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "400" }, { status: 400 });
         } 
         
-        const result = await verifyCode(deobf2(kt), req, ll);
+        const result = await verifyCode(deobf2(kt), req, gps);
         if (!result.success) {
             console.log("authentication failed");
             return NextResponse.json({ error: "400" }, { status: 400 });

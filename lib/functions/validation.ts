@@ -45,9 +45,6 @@ export function isValidUserAgent(userAgent: string): boolean {
 }
 
 export function isValidGps(gps: GpsData): boolean {
-    if (gps.ff < 0 || gps.ff > 100) {
-        return false;
-    }
     if (gps.hh < -90 || gps.hh > 90) {
         return false;
     }
