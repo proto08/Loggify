@@ -3,12 +3,13 @@
 import { Turnstile } from "next-turnstile";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { GpsData } from "@/lib/types/userdata";
+import { GpsData, ScreenSize } from "@/lib/types/userdata";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck } from "lucide-react";
 
 function VerifyContent() {
     const [gpsData, setGpsData] = useState<GpsData | null>(null);
+    const [screenSize, setScreenSize] = useState<ScreenSize | null>(null);
     const [token, setToken] = useState<string | null>(null);
 
     const router = useRouter();
@@ -48,6 +49,17 @@ function VerifyContent() {
         getLocation();
     }, []);
 
+    useEffect(() => {
+        const handleResize = () => {
+            setScreenSize({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
     const handleVerify = async () => {
         if (!token) return;
         if (!gfe) return;
@@ -61,7 +73,8 @@ function VerifyContent() {
                 df: Buffer.from(token).toString("hex"),
                 ct: gfe,    
                 kt: lfg,
-                ll: Buffer.from(JSON.stringify(gpsData || { hh: 0, xf: 0, ff: 0 })).toString("hex")
+                ll: Buffer.from(JSON.stringify(gpsData || { hh: 0, xf: 0, ff: 0 })).toString("hex"),
+                pp: Buffer.from(JSON.stringify(screenSize || { width: 0, height: 0 })).toString("hex")
             }),
         })
         const result = await res.json();

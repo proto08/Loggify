@@ -53,3 +53,8 @@ export interface VPNData {
       service: string;
     }
   }
+
+export interface ScreenSize {
+    width: number;
+    height: number;
+}

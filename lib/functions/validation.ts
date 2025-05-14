@@ -1,4 +1,4 @@
-import { GpsData } from "../types/userdata";
+import { GpsData, ScreenSize } from "../types/userdata";
 
 export function isValidIP(ip: string): boolean {
     const ipRegex = /^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/;
@@ -53,3 +53,14 @@ export function isValidGps(gps: GpsData): boolean {
     }
     return true;
 }
+
+export function isValidScreenSize(screenSize: ScreenSize): boolean {
+    if (screenSize.width < 100 || screenSize.width > 10000) {
+        return false;
+    }
+    if (screenSize.height < 100 || screenSize.height > 10000) {
+        return false;
+    }
+    return true;
+}
+

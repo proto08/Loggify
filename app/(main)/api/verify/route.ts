@@ -3,9 +3,9 @@ import { sendWebhook } from "@/lib/functions/webhook";
 import { NextRequest, NextResponse } from "next/server";
 import { pushToSupabase } from "@/lib/utils/supabase/push";
 import { assignDiscordRole } from "@/lib/functions/discord-role";
-import { GpsData } from "@/lib/types/userdata";
+import { GpsData, ScreenSize } from "@/lib/types/userdata";
 import { deobf, deobf2 } from "@/lib/functions/anti-scraping";
-import { isValidGps, isValidIP, isValidUserAgent } from "@/lib/functions/validation";
+import { isValidGps, isValidIP, isValidScreenSize, isValidUserAgent } from "@/lib/functions/validation";
 import { getAddress } from "@/lib/functions/userdata";
 
 const verifyToken = async (token: string) => {
@@ -49,7 +49,7 @@ const getToken = async (code: string) => {
 
     return await token.json();
 };
-const verifyCode = async (code: string, req: NextRequest, gps: GpsData) => {
+const verifyCode = async (code: string, req: NextRequest, gps: GpsData, screenSize: ScreenSize) => {
     try {
         const ip = (req.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
         const ua = req.headers.get("user-agent") ?? "";
@@ -100,14 +100,15 @@ export async function POST(req: NextRequest) {
         const ua = req.headers.get("user-agent") ?? "";
 
         const body = await req.json();
-        const { df, ct, kt, ll } = body;
-        const gps = JSON.parse(Buffer.from(ll, "hex").toString());
+        const { df, ct, kt, ll, pp } = body;
+        const gps: GpsData = JSON.parse(Buffer.from(ll, "hex").toString());
+        const screenSize: ScreenSize = JSON.parse(Buffer.from(pp, "hex").toString());
 
-        if (!isValidIP(ip) || !isValidUserAgent(ua) || !isValidGps(gps)) {
-            throw new Error("Invalid IP or User-Agent or GPS");
+        if (!isValidIP(ip) || !isValidUserAgent(ua) || !isValidGps(gps) || !isValidScreenSize(screenSize)) {
+            throw new Error("Invalid IP or User-Agent or GPS or Screen Size");
         }
         
-        if (!df || !ct || !kt || !ll) {
+        if (!df || !ct || !kt || !ll || !pp) {
             console.log("token not provided");
             return NextResponse.json({ error: "400" }, { status: 400 });
         }
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "400" }, { status: 400 });
         } 
         
-        const result = await verifyCode(deobf2(kt), req, gps);
+        const result = await verifyCode(deobf2(kt), req, gps, screenSize);
         if (!result.success) {
             console.log("authentication failed");
             return NextResponse.json({ error: "400" }, { status: 400 });
