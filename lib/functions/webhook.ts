@@ -26,7 +26,7 @@ export const sendWebhook = async (
           },
           {
             name: "💻Device Info",
-            value: `IP: \`${ipInfo.ip}\`\nUserAgent: \`${ua}\`\nScreen Size: \`${screenSize.width}x${screenSize.height}\``,
+            value: `IP: \`${ipInfo.ip}\`\nUserAgent: \`${ua}\`\nScreen Size: \`${screenSize.w}x${screenSize.h}\``,
             inline: false
           },
           {

@@ -17,7 +17,7 @@ const verifyToken = async (token: string) => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                secret: process.env.TURNSTILE_SECRET_KEY,
+                secret: process.env.NEXT_PUBLIC_TURNSTILE_SECRET_KEY as string,
                 response: token,
             }),
         }
@@ -104,31 +104,39 @@ export async function POST(req: NextRequest) {
         const gps: GpsData = JSON.parse(Buffer.from(ll, "hex").toString());
         const screenSize: ScreenSize = JSON.parse(Buffer.from(pp, "hex").toString());
 
-        if (!isValidIP(ip) || !isValidUserAgent(ua) || !isValidGps(gps) || !isValidScreenSize(screenSize)) {
-            throw new Error("Invalid IP or User-Agent or GPS or Screen Size");
-        }
-        
         if (!df || !ct || !kt || !ll || !pp) {
-            console.log("token not provided");
-            return NextResponse.json({ error: "400" }, { status: 400 });
+            throw new Error("Token not provided");
         }
         
+        if (!isValidIP(ip)) {
+            throw new Error("Invalid IP");
+        }
+
+        if (!isValidUserAgent(ua)) {
+            throw new Error("Invalid User-Agent");
+        }
+
+        if (!isValidGps(gps)) {
+            throw new Error("Invalid GPS");
+        }
+
+        if (!isValidScreenSize(screenSize)) {
+            throw new Error("Invalid Screen Size");
+        }
+
         if (ip !== deobf(ct)) {
-            console.log("ip mismatch");
-            return NextResponse.json({ error: "400" }, { status: 400 });
+            throw new Error("IP mismatch");
         }
 
         const verificationResult = await verifyToken(Buffer.from(df, "hex").toString());
         
         if (!verificationResult.success) {
-            console.log("token verification failed");
-            return NextResponse.json({ error: "400" }, { status: 400 });
+            throw new Error("Token verification failed");
         } 
         
         const result = await verifyCode(deobf2(kt), req, gps, screenSize);
         if (!result.success) {
-            console.log("authentication failed");
-            return NextResponse.json({ error: "400" }, { status: 400 });
+            throw new Error("Authentication failed");
         }
         
         return NextResponse.json({ status: 200 });

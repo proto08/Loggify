@@ -55,6 +55,6 @@ export interface VPNData {
   }
 
 export interface ScreenSize {
-    width: number;
-    height: number;
+    w: number;
+    h: number;
 }
