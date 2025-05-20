@@ -83,7 +83,7 @@ export function LoginForm({
         </CardContent>
       </Card>
       <div className="text-muted-foreground text-center text-xs text-balance">
-        By clicking continue, you agree to our <span className="px-1 underline hover:text-primary"><Link href="/tos">Terms of Service</Link></span>
+        By clicking continue, you agree to our <span className="px-1 underline hover:text-primary"><Link href="/terms">Terms of Service</Link></span>
         and <span className="pl-1 underline hover:text-primary"><Link href="/privacy">Privacy Policy</Link></span>.
       </div>
     </div>

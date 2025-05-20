@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { obf, obf2 } from "@/lib/functions/anti-scraping";
-import { isValidIP } from "@/lib/functions/validation";
-import { isValidUserAgent } from "@/lib/functions/validation";
+import { isValidIP, isValidUserAgent } from "@/lib/functions/validation";
 
 
 export async function GET(req: NextRequest) {
@@ -15,8 +14,12 @@ export async function GET(req: NextRequest) {
         const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
         const ua = req.headers.get("user-agent") ?? "";
 
-        if (!isValidIP(ip) || !isValidUserAgent(ua)) {
-            throw new Error("Invalid IP or User-Agent");
+        if (!isValidIP(ip)) {
+            throw new Error("Invalid IP");
+        }
+
+        if (!isValidUserAgent(ua)) {
+            throw new Error("Invalid User-Agent");
         }
 
         const obfuscatedIp = obf(ip)

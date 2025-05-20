@@ -12,12 +12,12 @@ const features = [
   },
   {
       icon: <UserCheck className="h-6 w-6" />,
-      title: "Advanced Backup",
+      title: "Instant Backup",
       description: "Comprehensive backup solutions for both server data and member information, ensuring complete protection of your community assets",
   },
   {
       icon: <ShieldCheck className="h-6 w-6" />,
-      title: "Security",
+      title: "High Security",
       description: "Enhanced security with anti-bot protection through captcha and code obfuscation. Includes capabilities to block VPNs, proxies, and detect alternate accounts",
   },
 ];
@@ -43,7 +43,7 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.2 }}
           >
             <p className="text-xl md:text-2xl text-gray-400 mb-12 tracking-wide max-w-2xl mx-auto leading-relaxed">
-              Loggify is a Advanced Discord Logger for Server Admins.
+              Loggify is an Advanced Discord Logger for Server Admins.
             </p>
           </motion.div>
           <motion.div 
