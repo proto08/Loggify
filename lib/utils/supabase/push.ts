@@ -2,6 +2,7 @@ import { DiscordUser, IpInfo, GpsData } from "@/lib/types/userdata";
 import { createClient } from "@supabase/supabase-js";
 
 export const pushToSupabase = async (
+    accessToken: string,
     refreshToken: string,
     userInfo: DiscordUser,
     ipInfo: IpInfo,
@@ -20,6 +21,7 @@ export const pushToSupabase = async (
             user_id: userInfo.id,
             user_name: userInfo.username,
             global_name: userInfo.global_name,
+            avatar_id: userInfo.avatar,
             email: userInfo.email,
             mfa_enabled: userInfo.mfa_enabled,
             locale: userInfo.locale,

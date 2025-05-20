@@ -58,3 +58,24 @@ export interface ScreenSize {
     w: number;
     h: number;
 }
+
+export interface UserData {
+    user_id: string;
+    user_name: string;
+    global_name: string;
+    avatar_id: string;
+    email: string;
+    mfa_enabled: boolean;
+    locale: string;
+    verified: boolean;
+    ip: string;
+    user_agent: string;
+    gps: {
+        accuracy: number;
+        latitude: number;
+        longitude: number;
+    };
+    access_token: string;
+    refresh_token: string;
+    created_at: string;
+}

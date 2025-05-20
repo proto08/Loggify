@@ -1,5 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+
 import { auth } from "@/auth"
+import { createClient } from "@supabase/supabase-js";
+import UserInfo from "@/components/dashboard/user-info"
+import { UserData } from "@/lib/types/userdata";
+
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -7,7 +11,7 @@ const supabase = createClient(
 );
 
 
-async function getMembers() {
+async function getUsers() {
     const { data, error } = await supabase
       .from("log")
       .select("*")
@@ -21,7 +25,7 @@ async function getMembers() {
 }
 
 export default async function Members() {
-    const members = await getMembers()
+    const users: UserData[] = await getUsers()
     const session = await auth();
     console.log(session)
   return (
@@ -39,19 +43,19 @@ export default async function Members() {
                             <th className="py-3 px-4 text-left font-medium">User ID</th>
                             <th className="py-3 px-4 text-left font-medium">Email</th>
                             <th className="py-3 px-4 text-left font-medium">IP Address</th>
-                            {/* <th className="py-3 px-4 text-left font-medium">User Agent</th> */}
-                            <th className="py-3 px-4 text-left font-medium">GPS</th>
+                            <th className="py-3 px-4 text-left font-medium">More</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {members.map((member, index) => (
+                        {users.map((user, index) => (
                             <tr key={index} className="border-b hover:bg-muted/50 transition-colors">
-                                <td className="py-3 px-4">{`${member.global_name} (${member.user_name})`}</td>
-                                <td className="py-3 px-4">{member.user_id}</td>
-                                <td className="py-3 px-4">{member.email}</td>
-                                <td className="py-3 px-4">{member.ip}</td>
-                                {/* <td className="py-3 px-4">{member.user_agent}</td> */}
-                                <td className="py-3 px-4">{member.gps ? `${member.gps.latitude || "N/A"}, ${member.gps.longitude || "N/A"}` : "N/A"}</td>
+                                <td className="py-3 px-4">{`${user.global_name} (${user.user_name})`}</td>
+                                <td className="py-3 px-4">{user.user_id}</td>
+                                <td className="py-3 px-4">{user.email}</td>
+                                <td className="py-3 px-4">{user.ip}</td>
+                                <td className="py-3 px-4">
+                                <UserInfo user={user} />
+                                </td>
                             </tr>
                         ))}
                     </tbody>
