@@ -17,7 +17,7 @@ const verifyToken = async (token: string) => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                secret: process.env.NEXT_PUBLIC_TURNSTILE_SECRET_KEY as string,
+                secret: process.env.TURNSTILE_SECRET_KEY as string,
                 response: token,
             }),
         }
