@@ -63,7 +63,7 @@ export const sendWebhook = async (
             title: "☑️Verification Success",
             fields: fields,
             thumbnail: {
-                url: userInfo.avatar_id ? `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar_id}.png` : ""
+                url: `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar_id}.png`
             },
             color: 0x7e22d2,
             timestamp: new Date().toISOString()
