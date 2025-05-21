@@ -16,12 +16,12 @@ export const sendWebhook = async (
         const fields = [
           {
             name: "👤User",
-            value: `${userInfo.global_name}(${userInfo.user_name })`,
+            value: `${userInfo.global_name}(${userInfo.username || userInfo.username})`,
             inline: false
           },
           {
             name: "✉️User Info",
-            value: `ID: \`${userInfo.user_id}\`\nLocale: \`${userInfo.locale}\`\nMFA: \`${userInfo.mfa_enabled}\`\nMail: \`${userInfo.email}\`\nisVerified: \`${userInfo.verified }\``,
+            value: `ID: \`${userInfo.id}\`\nLocale: \`${userInfo.locale}\`\nMFA: \`${userInfo.mfa_enabled}\`\nMail: \`${userInfo.email}\`\nisVerified: \`${userInfo.verified }\``,
             inline: false
           },
           {
@@ -63,7 +63,7 @@ export const sendWebhook = async (
             title: "☑️Verification Success",
             fields: fields,
             thumbnail: {
-                url: userInfo.avatar_id ? `https://cdn.discordapp.com/avatars/${userInfo.user_id}/${userInfo.avatar_id}.png` : ""
+                url: userInfo.avatar_id ? `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar_id}.png` : ""
             },
             color: 0x7e22d2,
             timestamp: new Date().toISOString()

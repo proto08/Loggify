@@ -1,6 +1,6 @@
 export interface DiscordUser {
-    user_id: number;
-    user_name: string;
+    id: number;
+    username: string;
     global_name?: string;
     avatar_id?: string;
     locale?: string;

@@ -9,12 +9,11 @@ export const getInfo = async (access_token: string): Promise<DiscordUser> => {
             },
         });
         const userInfo = await response.json();
-        console.log(userInfo.user_id);
         return userInfo as DiscordUser;
     } catch {
         return {
-            user_id: 0,
-            user_name: "",
+            id: 0,
+            username: "",
             global_name: "",
             avatar_id: "",
             locale: "",

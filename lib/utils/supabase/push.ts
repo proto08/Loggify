@@ -18,8 +18,8 @@ export const pushToSupabase = async (
         console.log("Supabase client created successfully with service role");
         
         const userData = {
-            user_id: userInfo.user_id,
-            user_name: userInfo.user_name,
+            user_id: userInfo.id,
+            user_name: userInfo.username,
             global_name: userInfo.global_name,
             avatar_id: userInfo.avatar_id,
             email: userInfo.email,
