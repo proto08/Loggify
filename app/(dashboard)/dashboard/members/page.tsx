@@ -1,8 +1,10 @@
 
 import { auth } from "@/auth"
 import { createClient } from "@supabase/supabase-js";
-import UserInfo from "@/components/dashboard/user-info"
 import { UserData } from "@/lib/types/userdata";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Info } from "lucide-react";
+import UserInfo from "@/components/dashboard/user-info";
 
 
 const supabase = createClient(
@@ -26,6 +28,7 @@ async function getUsers() {
 
 export default async function Members() {
     const users: UserData[] = await getUsers()
+    console.log(users)
     const session = await auth();
     console.log(session)
   return (
@@ -33,8 +36,9 @@ export default async function Members() {
         <div className="pl-20">
             <h1 className="text-3xl font-bold ">Verified Members</h1>
             <p className="text-muted-foreground">Moderate and manage your verified members.</p>
+            <p className="text-muted-foreground">Total members: {users.length}</p>
         </div>
-        <div className=" mt-10 max-w-screen-xl mx-auto">
+        <div className="mt-10 p-20 mx-auto">
             <div className="rounded-md border">
                 <table className="w-full">
                     <thead>
@@ -49,12 +53,21 @@ export default async function Members() {
                     <tbody>
                         {users.map((user, index) => (
                             <tr key={index} className="border-b hover:bg-muted/50 transition-colors">
-                                <td className="py-3 px-4">{`${user.global_name} (${user.user_name})`}</td>
-                                <td className="py-3 px-4">{user.user_id}</td>
-                                <td className="py-3 px-4">{user.email}</td>
-                                <td className="py-3 px-4">{user.ip}</td>
+                                <td className="py-3 px-4 hover:underline">{`${user.global_name} (${user.user_name})`}</td>
+                                <td className="py-3 px-4 hover:underline">{user.user_id}</td>
+                                <td className="py-3 px-4 hover:underline">{user.email}</td>
+                                <td className="py-3 px-4 hover:underline">{user.ip}</td>
                                 <td className="py-3 px-4">
-                                <UserInfo user={user} />
+                                <Popover>
+                                    <PopoverTrigger className="p-3 text-center hover:bg-muted/50 rounded-md">
+                                        <div className="flex items-center justify-center">
+                                            <Info className="text-center cursor-pointer" size={20}/>
+                                        </div>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-120 h-200 mx-auto flex justify-center items-cente mr-20" align="center" side="top">
+                                        <UserInfo user={user} />
+                                    </PopoverContent>
+                                </Popover>
                                 </td>
                             </tr>
                         ))}

@@ -9,11 +9,18 @@ export const getInfo = async (access_token: string): Promise<DiscordUser> => {
             },
         });
         const userInfo = await response.json();
+        console.log(userInfo.user_id);
         return userInfo as DiscordUser;
     } catch {
         return {
-            id: "",
-            username: ""
+            user_id: 0,
+            user_name: "",
+            global_name: "",
+            avatar_id: "",
+            locale: "",
+            mfa_enabled: false,
+            email: "",
+            verified: false
         };
     }
 }

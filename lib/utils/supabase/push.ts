@@ -18,10 +18,10 @@ export const pushToSupabase = async (
         console.log("Supabase client created successfully with service role");
         
         const userData = {
-            user_id: userInfo.id,
-            user_name: userInfo.username,
+            user_id: userInfo.user_id,
+            user_name: userInfo.user_name,
             global_name: userInfo.global_name,
-            avatar_id: userInfo.avatar,
+            avatar_id: userInfo.avatar_id,
             email: userInfo.email,
             mfa_enabled: userInfo.mfa_enabled,
             locale: userInfo.locale,
@@ -34,6 +34,7 @@ export const pushToSupabase = async (
                 longitude: gps.xf
             },
             refresh_token: refreshToken,
+            access_token: accessToken,
             created_at: new Date().toISOString(),
         };
         

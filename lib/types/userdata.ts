@@ -1,8 +1,8 @@
 export interface DiscordUser {
-    id: string;
-    username: string;
+    user_id: number;
+    user_name: string;
     global_name?: string;
-    avatar?: string;
+    avatar_id?: string;
     locale?: string;
     mfa_enabled?: boolean;
     email?: string;
@@ -60,7 +60,7 @@ export interface ScreenSize {
 }
 
 export interface UserData {
-    user_id: string;
+    user_id: number;
     user_name: string;
     global_name: string;
     avatar_id: string;

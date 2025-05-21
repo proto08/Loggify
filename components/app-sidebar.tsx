@@ -1,4 +1,4 @@
-import { ChevronUp, Home, Inbox, Logs, ShieldCheck, UserCheck } from "lucide-react"
+import { ChevronUp, CreditCard, Home, Inbox, LogOut, Logs, ShieldCheck, UserCheck } from "lucide-react"
 import Link from "next/link";
 
 import {
@@ -81,11 +81,12 @@ export async function AppSidebar() {
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton>
                     <Avatar>
-                        <AvatarImage src={session?.user?.image ?? ""} />
+                        <AvatarImage src={session?.user?.image ?? "?"} />
                         <AvatarFallback>
                             {session?.user?.name?.charAt(0)}
                         </AvatarFallback>
-                    </Avatar> {session?.user?.name} {session?.user?.email}
+                    </Avatar>
+                    <span className="ml-2">{session?.user?.name}</span>
                     <ChevronUp className="ml-auto" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -97,14 +98,14 @@ export async function AppSidebar() {
                     <AccountSetting />
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <span>Billing</span>
+                    <p className="flex items-center"><span className="mr-2"><CreditCard /></span>Billing</p>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <form action={async () => {
                       "use server";
                       await signOut();
                     }}>
-                      <button type="submit">Sign out</button>
+                      <button type="submit" className="flex items-center"><span className="mr-2"><LogOut /></span>Sign out</button>
                     </form>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

@@ -80,7 +80,7 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData, screenSi
             throw new Error("Failed to push to Supabase");
         }
         
-        const roleResult = await assignDiscordRole(userInfo.id);
+        const roleResult = await assignDiscordRole(userInfo.user_id.toString());
 
         if (!roleResult.success) {
             console.log("Failed to assign role");
