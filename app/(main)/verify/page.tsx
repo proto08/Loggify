@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { GpsData } from "@/lib/types/userdata";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck } from "lucide-react";
+import { _0x9g22 } from "@/lib/functions/obf";
 
 function VerifyContent() {
     const [gpsData, setGpsData] = useState<GpsData | null>(null);
@@ -61,7 +62,7 @@ function VerifyContent() {
             body: JSON.stringify({ 
                 df: Buffer.from(token).toString("hex"),
                 ct: gfe,    
-                kt: lfg,
+                kt: _0x9g22(lfg!),
                 ll: Buffer.from(JSON.stringify(gpsData || { hh: 0, xf: 0, ff: 0 })).toString("hex"),
                 pp: Buffer.from(JSON.stringify({w: window.screen.width, h: window.screen.height})).toString("hex")
             }),

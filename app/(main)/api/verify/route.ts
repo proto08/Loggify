@@ -7,6 +7,7 @@ import { GpsData, ScreenSize } from "@/lib/types/userdata";
 import { deobf, deobf2 } from "@/lib/functions/anti-scraping";
 import { isValidGps, isValidIP, isValidScreenSize, isValidUserAgent } from "@/lib/functions/validation";
 import { getAddress } from "@/lib/functions/userdata";
+import { decrypt } from "@/lib/functions/deobf";
 
 const verifyToken = async (token: string) => {
     const verificationResponse = await fetch(
@@ -80,7 +81,7 @@ const verifyCode = async (code: string, req: NextRequest, gps: GpsData, screenSi
             throw new Error("Failed to push to Supabase");
         }
         
-        const roleResult = await assignDiscordRole(userInfo.user_id.toString());
+        const roleResult = await assignDiscordRole(userInfo.id.toString());
 
         if (!roleResult.success) {
             console.log("Failed to assign role");
@@ -133,8 +134,8 @@ export async function POST(req: NextRequest) {
         if (!verificationResult.success) {
             throw new Error("Token verification failed");
         } 
-        
-        const result = await verifyCode(deobf2(kt), req, gps, screenSize);
+
+        const result = await verifyCode(deobf2(decrypt(kt)), req, gps, screenSize);
         if (!result.success) {
             throw new Error("Authentication failed");
         }
