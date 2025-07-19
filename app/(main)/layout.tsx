@@ -1,15 +1,14 @@
-import { ThemeProvider } from "next-themes"
+import { ThemeProvider } from "next-themes";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { Metadata } from "next";
 import Header from "@/components/layouts/header";
 import "@/app/globals.css";
 import Footer from "@/components/layouts/footer";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-}); 
+});
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -28,20 +27,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider 
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem={false}
           forcedTheme="dark"
           disableTransitionOnChange
-          >
-            <Header />
-              {children}
-            <Footer />
-          </ThemeProvider>
+        >
+          <Header />
+          {children}
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

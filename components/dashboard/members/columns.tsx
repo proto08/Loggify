@@ -43,9 +43,15 @@ export const columns: ColumnDef<UserData>[] = [
     cell: ({ row }) => (
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon"><Info size={18} /></Button>
+          <Button variant="ghost" size="icon">
+            <Info size={18} />
+          </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-120 h-130 mx-auto flex justify-center items-center mr-20" align="center" side="top">
+        <PopoverContent
+          className="w-120 h-130 mx-auto flex justify-center items-center mr-20"
+          align="center"
+          side="top"
+        >
           <UserInfo user={row.original} />
         </PopoverContent>
       </Popover>
@@ -53,4 +59,4 @@ export const columns: ColumnDef<UserData>[] = [
     enableSorting: false,
     enableColumnFilter: false,
   },
-]; 
+];

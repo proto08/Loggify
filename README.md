@@ -25,6 +25,7 @@ Loggify is an advanced Discord logging system that collects and displays user in
 - ✅ Confirmation page after verification completion
 
 ## Logger Example
+
 ![Logger Example](https://raw.githubusercontent.com/yuk228/loggify/refs/heads/main/assets/logger.png)
 
 The logging functionality collects comprehensive user information, transmits it to Discord webhooks, and stores it securely in a Supabase database. Key capabilities include:
@@ -60,17 +61,20 @@ The logging functionality collects comprehensive user information, transmits it 
 ### 📥 Installation
 
 1. Clone the repository
+
    ```
    git clone https://github.com/yourusername/loggify.git
    cd loggify
    ```
 
 2. Install dependencies
+
    ```
    npm install
    ```
 
 3. Create a `.env` file in the root directory with the following variables:
+
    ```
    # Discord Configuration
    CLIENT_ID=<your-discord-client-id>
@@ -80,11 +84,11 @@ The logging functionality collects comprehensive user information, transmits it 
    DISCORD_BOT_TOKEN=<your-discord-bot-token>
    DISCORD_GUILD_ID=<your-discord-server-id>
    DISCORD_ROLE_ID=<role-id-to-assign>
-   
+
    # Supabase Configuration
    NEXT_PUBLIC_SUPABASE_URL=<your-supabase-project-url>
    SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
-   
+
    # Turnstile Configuration
    TURNSTILE_SECRET_KEY=<your-turnstile-secret-key>
    NEXT_PUBLIC_TURNSTILE_SITE_KEY=<your-turnstile-site-key>
@@ -106,11 +110,13 @@ The logging functionality collects comprehensive user information, transmits it 
      - `created_at` (timestamp with timezone)
 
 5. Start the development server
+
    ```
    npm run dev
    ```
 
 6. Build for production
+
    ```
    npm run build
    ```

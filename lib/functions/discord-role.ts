@@ -23,4 +23,4 @@ export async function assignDiscordRole(userId: string) {
   } catch {
     return { success: false };
   }
-} 
+}
