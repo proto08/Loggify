@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
-type UserLocation = {
+export type UserLocation = {
   latitude: number;
   longitude: number;
-  altitude?: number | null;
+  altitude?: number;
   accuracy: number;
 };
 
-export function useUserLocation() {
+export function useUserLocation(): UserLocation {
   const [location, setLocation] = useState<UserLocation | null>(null);
 
   useEffect(() => {
@@ -17,12 +17,17 @@ export function useUserLocation() {
           setLocation({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            altitude: position.coords.altitude ?? null,
+            altitude: position.coords.altitude ?? undefined,
             accuracy: position.coords.accuracy,
           });
         },
-        (error) => {
-          // TODO: handle error
+        () => {
+          setLocation({
+            latitude: 0,
+            longitude: 0,
+            altitude: 0,
+            accuracy: 0,
+          });
         },
         {
           enableHighAccuracy: true,
@@ -33,5 +38,5 @@ export function useUserLocation() {
     }
   }, []);
 
-  return location;
+  return location as UserLocation;
 }
