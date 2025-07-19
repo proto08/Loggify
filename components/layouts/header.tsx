@@ -1,7 +1,6 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/shared/button";
 import Link from "next/link";
 import React from "react";
-import UserButton from "@/components/ui/user-button";
 export default async function Header() {
   return (
     <header className="fixed top-0 w-full z-50 backdrop-blur-sm">
@@ -35,9 +34,6 @@ export default async function Header() {
             </Button>
           </li>
         </ul>
-        <div className="flex items-center gap-4">
-          <UserButton />
-        </div>
       </div>
     </header>
   );
