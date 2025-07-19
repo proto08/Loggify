@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { sessionOptions, SessionData } from "@/lib/session";
 
-export async function GET(req: NextRequest) {
-  const res = new NextResponse();
+export async function GET(request: NextRequest) {
+  const response = new NextResponse();
   try {
-    const session = await getIronSession<SessionData>(req, res, sessionOptions);
-
+    const session = await getIronSession<SessionData>(request, response, sessionOptions);
     if (!session.csrfToken) {
       const errorResponse = NextResponse.json({ status: 400 });
-      const cookie = res.headers.get("Set-Cookie");
-
+      const cookie = response.headers.get("Set-Cookie");
       if (cookie) {
         errorResponse.headers.set("Set-Cookie", cookie);
       }
@@ -18,7 +16,7 @@ export async function GET(req: NextRequest) {
     }
 
     const successResponse = NextResponse.json({ csrfToken: session.csrfToken }, { status: 200 });
-    const cookie = res.headers.get("Set-Cookie");
+    const cookie = response.headers.get("Set-Cookie");
     if (cookie) {
       successResponse.headers.set("Set-Cookie", cookie);
     }

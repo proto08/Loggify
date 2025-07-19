@@ -12,7 +12,6 @@ export async function assignRole(userId: string) {
         },
       }
     );
-
     if (!res.ok) {
       throw new Error("Failed to assign role");
     }

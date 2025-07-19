@@ -1,34 +1,46 @@
 "use client";
 
 import { Turnstile } from "next-turnstile";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Button } from "@/components/shared/button";
 import { ShieldCheck } from "lucide-react";
-import { _0x9g22 } from "@/lib/functions/obf";
-import { useUserLocation } from "@/lib/hooks/use-user-location";
+import { useUserLocation } from "@/lib/hooks/user-location-hooks";
+import { useScreenSize } from "@/lib/hooks/screen-size-hooks";
+import { useCsrfToken } from "@/lib/hooks/csrf-token-hooks";
 
-function VerifyContent() {
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Suspended />
+    </Suspense>
+  );
+}
+
+function Suspended() {
+  return <Body />;
+}
+
+function Body() {
   const location = useUserLocation();
+  const screenSize = useScreenSize();
+  const csrfToken = useCsrfToken();
   const [token, setToken] = useState<string | null>(null);
-
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const code = searchParams.get("code");
 
   const handleVerify = async () => {
-    if (!token) return;
-    if (!code) return;
+    if (!token || !csrfToken) return;
     const res = await fetch("/api/verify", {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
       },
       body: JSON.stringify({
-        code,
         location,
-        token: await _0x9g22(token),
+        token,
+        screenSize,
       }),
     });
     const result = await res.json();
@@ -66,13 +78,5 @@ function VerifyContent() {
         </div>
       </div>
     </main>
-  );
-}
-
-export default function Verify() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <VerifyContent />
-    </Suspense>
   );
 }

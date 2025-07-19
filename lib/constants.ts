@@ -14,7 +14,10 @@ export const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
 
 // Password
 export const SESSION_PASSWORD = process.env.SESSION_PASSWORD;
-export const OBF_PASSWORD = process.env.OBF_PASSWORD;
+
+// Supabase
+export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Others
 export const BASE_URL = process.env.BASE_URL;

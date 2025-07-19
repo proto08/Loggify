@@ -32,7 +32,7 @@ export async function validateToken(token: string) {
   }
 }
 
-export async function getAccessToken(code: string) {
+export async function getUserToken(code: string) {
   try {
     const body = new URLSearchParams({
       grant_type: "authorization_code",
@@ -40,7 +40,7 @@ export async function getAccessToken(code: string) {
       redirect_uri: `${BASE_URL}/api/callback`,
     }).toString();
 
-    const token = await fetch(`https://discord.com/api/v10/oauth2/token`, {
+    const response = await fetch(`https://discord.com/api/v10/oauth2/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -51,11 +51,15 @@ export async function getAccessToken(code: string) {
       body,
     });
 
-    if (!token.ok) {
+    if (!response.ok) {
+      console.log(await response.json());
       throw new Error("Failed to fetch token");
     }
-
-    return await token.json();
+    const data = (await response.json()) as {
+      access_token: string;
+      refresh_token: string;
+    };
+    return data;
   } catch (error) {
     console.log("Error in get token from discord:", error);
     throw error;
