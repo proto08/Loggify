@@ -1,33 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import { obf, obf2 } from "@/lib/functions/anti-scraping";
-import { isValidIP, isValidUserAgent } from "@/lib/functions/validation";
+import { getIronSession } from "iron-session";
+import { sessionOptions, SessionData } from "@/lib/session";
+import crypto from "crypto";
 
 export async function GET(req: NextRequest) {
+  const res = new NextResponse();
   try {
+    const session = await getIronSession<SessionData>(req, res, sessionOptions);
     const code = new URL(req.url).searchParams.get("code");
 
     if (!code) {
       throw new Error("No code provided");
     }
 
-    const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-    const ua = req.headers.get("user-agent") ?? "";
+    const csrfToken = crypto.randomBytes(32).toString("hex");
 
-    if (!isValidIP(ip)) {
-      throw new Error("Invalid IP");
-    }
+    session.code = code;
+    session.csrfToken = csrfToken;
+    await session.save();
 
-    if (!isValidUserAgent(ua)) {
-      throw new Error("Invalid User-Agent");
-    }
-
-    const obfuscatedIp = obf(ip);
-    const obfuscatedCode = obf2(code);
-    return NextResponse.redirect(
-      `${process.env.BASE_URL}/verify?gfe=${obfuscatedIp}&lfg=${obfuscatedCode}`
-    );
+    return createRedirectResponse("/verify", res);
   } catch (error) {
-    console.log(error);
-    return NextResponse.redirect(`${process.env.BASE_URL}/error`);
+    console.log("Error in api/callback:", error);
+    return createRedirectResponse("/error", res);
   }
+}
+
+function createRedirectResponse(path: string, res: NextResponse): NextResponse {
+  const redirectUrl = new URL(path, process.env.BASE_URL);
+  const response = NextResponse.redirect(redirectUrl);
+
+  const cookie = res.headers.get("Set-Cookie");
+
+  if (cookie) {
+    response.headers.set("Set-Cookie", cookie);
+  }
+
+  return response;
 }

