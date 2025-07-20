@@ -8,6 +8,7 @@ import { ShieldCheck } from "lucide-react";
 import { useUserLocation } from "@/lib/hooks/user-location-hooks";
 import { useScreenSize } from "@/lib/hooks/screen-size-hooks";
 import { useCsrfToken } from "@/lib/hooks/csrf-token-hooks";
+import { TURNSTILE_SITE_KEY } from "@/lib/constants";
 
 export default function Page() {
   return (
@@ -58,9 +59,9 @@ function Body() {
     });
     const result = await res.json();
     if (result.status === 200) {
-      router.push("/success");
+      router.push("/result/success");
     } else {
-      router.push("/error");
+      router.push("/result/error");
     }
   };
 
@@ -75,7 +76,7 @@ function Body() {
         <div className="mt-4">
           <div className="flex justify-center">
             <Turnstile
-              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY as string}
+              siteKey={TURNSTILE_SITE_KEY}
               onVerify={(token) => {
                 setToken(token);
               }}

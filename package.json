@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
     "@scure/base": "^1.2.5",
     "@supabase/supabase-js": "^2.49.4",
     "class-variance-authority": "^0.7.1",
