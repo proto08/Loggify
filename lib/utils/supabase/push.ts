@@ -1,13 +1,14 @@
-import { DiscordUser, IpInfo, GpsData } from "@/lib/types";
+import { IpInfo } from "@/lib/functions/logger";
+import { UserLocation } from "@/lib/hooks/user-location-hooks";
+import { DiscordUser} from "@/lib/types";
 import { supabase } from "@/lib/utils/supabase/client";
 
 export async function push(
-  accessToken: string,
   refreshToken: string,
   userInfo: DiscordUser,
   ipInfo: IpInfo,
-  ua: string,
-  gps: GpsData
+  userAgent: string,
+  location: UserLocation
 ) {
   try {
     const userData = {
@@ -20,14 +21,13 @@ export async function push(
       locale: userInfo.locale,
       verified: userInfo.verified,
       ip: ipInfo.ip,
-      user_agent: ua,
+      user_agent: userAgent,
       gps: {
-        accuracy: gps.ff,
-        latitude: gps.hh,
-        longitude: gps.xf,
+        accuracy: location.accuracy,
+        latitude: location.latitude,
+        longitude: location.longitude,
       },
       refresh_token: refreshToken,
-      access_token: accessToken,
       created_at: new Date().toISOString(),
     };
 

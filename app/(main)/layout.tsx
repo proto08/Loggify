@@ -17,7 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Loggify - The Best Discord Logging Service",
-  description: "Loggify is a Advanced Discord Logger for Server Admins.",
+  description:
+    "Loggify is an Advanced Discord Logger for Server Admins.\nWe collect user infomation, Geolocation, IP Address, and Browser Fingerprinting.",
 };
 
 export default function RootLayout({
