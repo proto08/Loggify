@@ -5,6 +5,7 @@ import { getUserToken, validateToken } from "@/lib/functions/verify";
 import { getIronSession } from "iron-session";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { DiscordUser } from "@/lib/types";
+import { isHosting } from "@/lib/functions/ip-check";
 
 export async function POST(req: NextRequest) {
   const res = new NextResponse();
@@ -14,6 +15,11 @@ export async function POST(req: NextRequest) {
     const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "";
     const userAgent = req.headers.get("user-agent") || "Failed to get UserAgent";
     const csrfToken = req.headers.get("X-CSRF-Token");
+
+    if (await isHosting(ipAddress)) {
+      console.log(`VPN / Proxy detected: ${ipAddress}`);
+      return NextResponse.json({ status: 403 });
+    }
 
     if (!token || !csrfToken || !session.code) {
       console.log("Missing required parameters: token, csrfToken, or session.code not found");
