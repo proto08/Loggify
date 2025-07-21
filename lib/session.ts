@@ -1,4 +1,4 @@
-import { SessionOptions } from "iron-session";
+import { IronSession, SessionOptions } from "iron-session";
 
 export interface SessionData {
   csrfToken?: string;
@@ -16,3 +16,9 @@ export const sessionOptions: SessionOptions = {
     maxAge: 60 * 60,
   },
 };
+
+export async function clearSession(session: IronSession<SessionData>) {
+  session.code = undefined;
+  session.csrfToken = undefined;
+  await session.save();
+}

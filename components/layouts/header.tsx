@@ -1,6 +1,7 @@
 import { Button } from "@/components/shared/button";
 import Link from "next/link";
 import React from "react";
+
 export default async function Header() {
   return (
     <header className="fixed top-0 w-full z-50 backdrop-blur-sm">
@@ -14,8 +15,8 @@ export default async function Header() {
         <ul className="hidden md:flex text-xl gap-4">
           <li>
             <Button variant="ghost">
-              <Link href="/pricing" className="hover:text-foreground transition-colors text-lg">
-                Pricing
+              <Link href="https://github.com/yuk228/Loggify" className="hover:text-foreground transition-colors text-lg">
+                Github
               </Link>
             </Button>
           </li>

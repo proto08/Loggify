@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { ShieldCheck } from "lucide-react";
 
-type Status = "success" | "error";
+type Status = "success" | "vpn" | "error";
 
 export default async function Page({ params }: { params: Promise<{ status: Status }> }) {
   const { status } = await params;
@@ -18,14 +18,18 @@ function Result({ status }: { status: Status }) {
             size={50}
             className={clsx(
               "mx-auto mb-4",
-              status === "success" ? "text-green-500" : "text-red-500"
+              status === "success" ? "text-green-500" :  "text-red-500"
             )}
           />
           <h1 className="text-2xl font-bold mb-4 text-center">
-            {status === "success" ? "Completed Verification" : "Verification Failed"}
+            {status === "success"
+              ? "Completed Verification"
+              : status === "vpn"
+                ? "VPN Detected"
+                : "Verification Failed"}
           </h1>
           <h1 className="text-xl font-bold mb-4 text-center">
-            {status === "success" ? "認証に完了しました" : "認証に失敗しました"}
+            {status === "success" ? "認証に完了しました" : status === "vpn" ? "VPNまたはProxyが検出されました" : "認証に失敗しました"}
           </h1>
         </div>
       </div>

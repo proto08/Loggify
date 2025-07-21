@@ -44,7 +44,7 @@ function Body() {
 
   const handleVerify = async () => {
     if (!token || !csrfToken) return;
-    const res = await fetch("/api/verify", {
+    const response = await fetch("/api/verify", {
       method: "POST",
       credentials: "include",
       headers: {
@@ -57,8 +57,7 @@ function Body() {
         screenSize,
       }),
     });
-    const result = await res.json();
-    if (result.status === 200) {
+    if (response.ok) {
       router.push("/result/success");
     } else {
       router.push("/result/error");
