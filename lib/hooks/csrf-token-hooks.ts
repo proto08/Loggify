@@ -25,6 +25,6 @@ export function useCsrfToken() {
       }
     };
     fetchCsrfToken();
-  }, []);
+  }, [router]);
   return csrfToken;
 }
