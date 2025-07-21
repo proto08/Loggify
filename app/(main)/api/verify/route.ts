@@ -3,9 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { assignRole } from "@/lib/functions/assign-role";
 import { getUserToken, validateToken } from "@/lib/functions/verify";
 import { getIronSession } from "iron-session";
-import { sessionOptions, SessionData } from "@/lib/session";
+import { clearSession, sessionOptions, SessionData } from "@/lib/session";
 import { DiscordUser } from "@/lib/types";
-import { isHosting } from "@/lib/functions/ip-check";
 
 export async function POST(req: NextRequest) {
   const res = new NextResponse();
@@ -16,17 +15,14 @@ export async function POST(req: NextRequest) {
     const userAgent = req.headers.get("user-agent") || "Failed to get UserAgent";
     const csrfToken = req.headers.get("X-CSRF-Token");
 
-    if (await isHosting(ipAddress)) {
-      console.log(`VPN / Proxy detected: ${ipAddress}`);
-      return NextResponse.json({ status: 403 });
-    }
-
     if (!token || !csrfToken || !session.code) {
       console.log("Missing required parameters: token, csrfToken, or session.code not found");
+      await clearSession(session);
       return NextResponse.json({ status: 400 });
     }
     if (!session.csrfToken || session.csrfToken !== csrfToken) {
       console.log("CSRF token is incorrect");
+      await clearSession(session);
       return NextResponse.json({ status: 400 });
     }
 
@@ -36,18 +32,11 @@ export async function POST(req: NextRequest) {
     await assignRole(userInfo.id.toString());
     await logger(userInfo, userToken.refresh_token, ipAddress, userAgent, location, screenSize);
 
-    session.code = undefined;
-    session.csrfToken = undefined;
-    await session.save();
-
+    await clearSession(session);
     return NextResponse.json({ status: 200 });
   } catch (error) {
     console.log("Error in /api/verify:", error);
-
-    session.code = undefined;
-    session.csrfToken = undefined;
-    await session.save();
-
+    await clearSession(session);
     return NextResponse.json({ status: 500 });
   }
 }

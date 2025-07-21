@@ -59,8 +59,6 @@ function Body() {
     });
     if (response.ok) {
       router.push("/result/success");
-    } else if (response.status === 403) {
-      router.push("/result/vpn");
     } else {
       router.push("/result/error");
     }
