@@ -1,158 +1,81 @@
-# 🔰 Loggify
+# Loggify: 高性能なDiscord認証ロガー
 
-Loggify is an advanced Discord logging system that collects and displays user information through webhooks and stores data in Supabase.
+Loggifyは、高性能なロガーを備えた、Discord Web認証サービスです。
+あなたのDiscord ServerをBOTの脅威から保護します。
 
-## ⚠️ Disclaimer
+# 機能
 
-**This application is developed for educational purposes only. The developers do not take any responsibility for any damages or issues that may arise from the use of this application. Unauthorized use for malicious purposes is strictly prohibited.**
+## Web認証
 
-## ✨ Features
+ユーザーはDiscordサーバー内でボタンを押すだけ、認証プロセスをスタート出来ます。
 
-- 🔐 OAuth2 authentication with Discord
-- 📊 Comprehensive data collection including:
-  - 👤 User profile information
-  - 🏢 Server memberships
-  - 🔗 Connected accounts
-  - 🌐 IP and location information
-  - 📱 Browser fingerprinting
-- 📡 Real-time data transmission to Discord webhooks
-- 💾 Secure data storage in Supabase database
-- 🎭 Automatic Discord role assignment upon verification
-- 🔄 Refresh token storage for persistent authentication
-- 🚀 Modern UI with responsive design
-- 🌙 Dark mode interface
-- 🛡️ Robust error handling with dedicated error pages
-- ✅ Confirmation page after verification completion
+## ロガー
 
-## Logger Example
+ユーザーの情報はサーバー管理のため収集され、Discord Webhook、データベースを用いて保存されます。
 
-![Logger Example](https://raw.githubusercontent.com/yuk228/loggify/refs/heads/main/assets/logger.png)
+収集が可能な情報は以下の通りです。
 
-The logging functionality collects comprehensive user information, transmits it to Discord webhooks, and stores it securely in a Supabase database. Key capabilities include:
+| カテゴリ             | 項目                 |
+| -------------------- | -------------------- |
+| **Discord情報**      | ユーザーID           |
+|                      | ユーザー名           |
+|                      | アバター             |
+|                      | メールアドレス       |
+|                      | アカウント作成日     |
+| **デバイス情報**     | ユーザーエージェント |
+|                      | 画面解像度           |
+|                      | 画面向き             |
+|                      | タイムゾーン         |
+| **ネットワーク情報** | IPアドレス           |
+|                      | ホスト名             |
+|                      | 国・地域             |
+|                      | 都市                 |
+|                      | プロバイダー         |
+|                      | 郵便番号             |
+| **位置情報**         | 緯度・経度           |
+|                      | 住所                 |
 
-- 👤 Detailed user profile data collection
-- 🏢 Complete server membership information
-- 🔗 Connected account tracking
-- 🌐 IP address and precise geolocation data
-- 📊 Real-time webhook notifications
-- 💾 Persistent and searchable database storage
+# インストール方法
 
-## 🛠️ Technology Stack
+1. `.env.example`を`.env`に変更し、適切な認証情報を入力
 
-- 🖥️ **Frontend**: Next.js 15.3.1, React 19
-- 🎨 **Styling**: Tailwind CSS with custom theming
-- 🔑 **Authentication**: Discord OAuth2, Nextauth(auth.js)
-- 🔄 **API Integration**: Discord API
-- 📨 **Notifications**: Discord Webhooks
-- 🗃️ **Database**: Supabase
-- 🔒 **Security**: Environment variable protection, Turnstile verification
+2. 依存関係をインストール
 
-## 🚀 Getting Started
-
-### 📋 Prerequisites
-
-- 📦 Node.js (LTS version recommended)
-- 🎮 Discord Application with OAuth2 setup
-- 🤖 Discord Bot with proper permissions
-- 📢 Discord webhook URL
-- 🔋 Supabase account and project
-- 🔍 Cloudflare Turnstile account
-
-### 📥 Installation
-
-1. Clone the repository
-
-   ```
-   git clone https://github.com/yourusername/loggify.git
-   cd loggify
-   ```
-
-2. Install dependencies
-
-   ```
+   ```bash
+   pnpm install
+   # または
    npm install
    ```
 
-3. Create a `.env` file in the root directory with the following variables:
+3. 開発サーバーを起動
 
-   ```
-   # Discord Configuration
-   CLIENT_ID=<your-discord-client-id>
-   CLIENT_SECRET=<your-discord-client-secret>
-   BASE_URL=<your-base-url> # e.g., http://localhost:3000 for development
-   DISCORD_WEBHOOK=<your-discord-webhook-url>
-   DISCORD_BOT_TOKEN=<your-discord-bot-token>
-   DISCORD_GUILD_ID=<your-discord-server-id>
-   DISCORD_ROLE_ID=<role-id-to-assign>
-
-   # Supabase Configuration
-   NEXT_PUBLIC_SUPABASE_URL=<your-supabase-project-url>
-   SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
-
-   # Turnstile Configuration
-   TURNSTILE_SECRET_KEY=<your-turnstile-secret-key>
-   NEXT_PUBLIC_TURNSTILE_SITE_KEY=<your-turnstile-site-key>
-   ```
-
-4. Set up your Supabase database:
-   - Create a `log` table with the following columns:
-     - `user_id` (text, primary key)
-     - `user_name` (text)
-     - `global_name` (text, nullable)
-     - `email` (text, nullable)
-     - `mfa_enabled` (boolean, nullable)
-     - `locale` (text, nullable)
-     - `verified` (boolean, nullable)
-     - `ip` (text)
-     - `user_agent` (text)
-     - `refresh_token` (text)
-     - `gps_data` (jsonb, nullable)
-     - `created_at` (timestamp with timezone)
-
-5. Start the development server
-
-   ```
+   ```bash
+   pnpm dev
+   # または
    npm run dev
    ```
 
-6. Build for production
+4. ブラウザで `http://localhost:3000` にアクセス
 
-   ```
+# 本番環境でのデプロイ
+
+1. 本番用にビルド
+
+   ```bash
+   pnpm build
+   # または
    npm run build
    ```
 
-7. Start the production server
+2. 本番サーバーを起動
+   ```bash
+   pnpm start
+   # または
+   npm start
    ```
-   npm run start
-   ```
 
-## 🎮 Setup Discord Application
+# 免責事項
 
-1. Create a new application at the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Navigate to the "OAuth2" tab
-3. Add a redirect URL: `<your-base-url>/api/callback`
-4. Set the required scopes (identify, email, guilds, connections)
-5. Copy the Client ID and Client Secret to your `.env` file
-6. Create a bot for your application and copy the token
-7. Invite the bot to your server with proper permissions to manage roles
-
-## 🗃️ Setup Supabase
-
-1. Create a new project at [Supabase](https://supabase.com)
-2. Create the `log` table as described in the installation section
-3. Get your project URL and API keys from the Settings > API section
-4. Add these credentials to your `.env` file
-5. For production, ensure Row Level Security (RLS) policies are properly configured
-
-## 🔒 Security Notes
-
-- ⚠️ The application collects and sends sensitive user information
-- 🛡️ Ensure your webhook URL is secure and not publicly accessible
-- 🔐 The Supabase service role key has admin privileges - keep it secure
-- 🔍 Consider implementing additional security measures for production environments
-- 🚫 Remember that this application is for educational purposes only
-- ⚖️ Using this application to collect data without proper consent may violate privacy laws and terms of service
-
-## 📜 License
-
-[MIT](LICENSE)
+- このプロジェクトは**研究・教育目的**で作成されました。
+- このプロジェクトを使用したことによるあらゆる損害について、**開発者は如何なる場合においても責任を一切負いません**。
+- 所属する国・地域の法律を厳守し、**法の範囲内で使用して下さい**。
