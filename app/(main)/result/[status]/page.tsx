@@ -18,7 +18,7 @@ function Result({ status }: { status: Status }) {
             size={50}
             className={clsx(
               "mx-auto mb-4",
-              status === "success" ? "text-green-500" :  "text-red-500"
+              status === "success" ? "text-green-500" : "text-red-500"
             )}
           />
           <h1 className="text-2xl font-bold mb-4 text-center">
@@ -29,7 +29,11 @@ function Result({ status }: { status: Status }) {
                 : "Verification Failed"}
           </h1>
           <h1 className="text-xl font-bold mb-4 text-center">
-            {status === "success" ? "認証に完了しました" : status === "vpn" ? "VPNまたはProxyが検出されました" : "認証に失敗しました"}
+            {status === "success"
+              ? "認証に完了しました"
+              : status === "vpn"
+                ? "VPNまたはProxyが検出されました"
+                : "認証に失敗しました"}
           </h1>
         </div>
       </div>

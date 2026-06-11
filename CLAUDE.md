@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Loggify is a Discord server verification system built with Next.js. Users authenticate via Discord OAuth2, complete a Turnstile CAPTCHA, and their data (Discord profile, IP geolocation, GPS coordinates, screen size, user agent) is logged to a Discord webhook and a Supabase database. VPN/proxy users are blocked from completing verification.
+Loggify is a Discord server verification system built with Next.js. Users authenticate via Discord OAuth2, complete a Turnstile CAPTCHA, and their data (Discord profile, IP geolocation, GPS coordinates, screen size, user agent) is logged to a Discord webhook. VPN/proxy users are blocked from completing verification.
 
 ## Commands
 
@@ -12,12 +12,13 @@ Loggify is a Discord server verification system built with Next.js. Users authen
 bun run dev        # Start dev server with Turbopack
 bun run build      # Production build
 bun run start      # Start production server
-bun run lint       # Run ESLint (next/core-web-vitals + next/typescript)
+bun run check      # Biome lint + format (primary quality gate)
+bun run lint       # Biome lint only
+bun run format     # Biome format only (writes in place)
+bun run knip       # Detect unused files, exports, and dependencies
 ```
 
-There is no test suite. Prettier is available as a dependency but has no script — run it directly: `bunx prettier --write .`
-
-**Prettier settings** (`.prettierrc`): 100-char print width, double quotes, 2-space tabs, ES5 trailing commas.
+There is no test suite. **Biome settings** (`biome.json`): 100-char line width, double quotes, 2-space indent, ES5 trailing commas.
 
 ## Architecture & Data Flow
 
@@ -29,7 +30,7 @@ The app is a single Next.js App Router project with all routes under `app/(main)
   → /api/callback  — exchanges code, checks VPN via ASN, stores auth code + CSRF token in iron-session
   → /verify        — client collects GPS + screen size, renders Turnstile widget
   → /api/verify    — validates CSRF, validates Turnstile, exchanges Discord token, calls logger()
-      → logger()   — fetches IP info, reverse-geocodes GPS, calls webhook() + supabase push + assignRole()
+      → logger()   — fetches IP info, reverse-geocodes GPS, calls webhook() + assignRole()
   → /result/[status]  — success | vpn | error
 ```
 
@@ -40,7 +41,6 @@ The app is a single Next.js App Router project with all routes under `app/(main)
 - `lib/functions/verify.ts` — Turnstile validation and Discord OAuth token exchange
 - `lib/functions/assign-role.ts` — Discord Bot API call to assign the verified role
 - `lib/functions/ip-check.ts` — ASN-based VPN/proxy detection against `lib/asn.json`
-- `lib/utils/supabase/push.ts` — inserts a row into Supabase (user ID, username, email, avatar, IP, GPS, user agent)
 - `lib/session.ts` — iron-session config (1-hour expiry, encrypted HTTP-only cookie, CSRF token stored per session)
 - `lib/constants.ts` — single source of truth for all `process.env.*` values; import from here, not directly from `process.env`
 - `lib/types.ts` — all shared TypeScript types (`DiscordUser`, `IpInfo`, `UserLocation`, `ScreenSize`, etc.)
@@ -77,13 +77,11 @@ Copy `.env.example` to `.env.local`. Required variables:
 | `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | OAuth2 app credentials |
 | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile CAPTCHA |
 | `SESSION_PASSWORD` | iron-session encryption key (random string) |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Supabase project credentials |
 | `BASE_URL` | Full origin URL (e.g. `http://localhost:3000`); used to construct the OAuth redirect URI |
 
 ## External Service Dependencies
 
 - **Discord API** — OAuth2 + Bot API (role assignment)
 - **Cloudflare Turnstile** — CAPTCHA verification
-- **Supabase** — PostgreSQL storage
 - **ipinfo.io** — IP geolocation and hostname resolution
 - **gps-coordinates.net** — Reverse geocoding GPS coordinates to address strings

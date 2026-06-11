@@ -16,8 +16,8 @@ async function getASN(ip: string): Promise<number | null> {
     }
     const data = await response.json();
     const match = data.org?.match(/AS(\d+)/);
-    if (match && match[1]) {
-      return parseInt(match[1], 10);
+    if (match?.[1]) {
+      return Number.parseInt(match[1], 10);
     }
     return null;
   } catch {

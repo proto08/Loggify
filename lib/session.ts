@@ -1,4 +1,5 @@
-import { IronSession, SessionOptions } from "iron-session";
+import { SESSION_PASSWORD } from "@/lib/constants";
+import type { IronSession, SessionOptions } from "iron-session";
 
 export interface SessionData {
   csrfToken?: string;
@@ -6,7 +7,7 @@ export interface SessionData {
 }
 
 export const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_PASSWORD!,
+  password: SESSION_PASSWORD,
   cookieName: "session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
