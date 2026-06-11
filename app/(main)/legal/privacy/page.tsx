@@ -1,5 +1,5 @@
-import React from "react";
 import Link from "next/link";
+import React from "react";
 
 export default async function Home() {
   return (
@@ -12,7 +12,7 @@ export default async function Home() {
               DeltaVerify（以下，「当社」といいます。）は，本ウェブサイト上で提供するサービス（以下,「本サービス」といいます。）における，ユーザーの個人情報の取扱いについて，以下のとおりプライバシーポリシー（以下，「本ポリシー」といいます。）を定めます。
             </p>
             <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">第1条（個人情報）</h2>
-            <p className="space-y-2 ml-4 text-sm sm:text-base"></p>
+            <p className="space-y-2 ml-4 text-sm sm:text-base" />
             <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">
               第2条（プライバシーポリシーの変更）
             </h2>

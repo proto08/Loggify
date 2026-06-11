@@ -15,7 +15,10 @@ export default async function Header() {
         <ul className="hidden md:flex text-xl gap-4">
           <li>
             <Button variant="ghost">
-              <Link href="https://github.com/yuk228/Loggify" className="hover:text-foreground transition-colors text-lg">
+              <Link
+                href="https://github.com/yuk228/Loggify"
+                className="hover:text-foreground transition-colors text-lg"
+              >
                 Github
               </Link>
             </Button>
