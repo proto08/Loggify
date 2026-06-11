@@ -1,6 +1,7 @@
 import { sendWebhook } from "@/lib/functions/webhook";
 import type { ScreenSize } from "@/lib/hooks/screen-size-hooks";
 import type { UserLocation } from "@/lib/hooks/user-location-hooks";
+import type { BrowserFingerprint } from "@/lib/hooks/webgl-fingerprint-hooks";
 import type { DiscordUser } from "@/lib/types";
 
 export async function logger(
@@ -9,13 +10,22 @@ export async function logger(
   ipAddress: string,
   userAgent: string,
   location: UserLocation,
-  screenSize: ScreenSize
+  screenSize: ScreenSize,
+  browserFingerprint: BrowserFingerprint
 ) {
   try {
     const ipInfo = await getIpInfo(ipAddress);
     const address = await getAddress(location.latitude, location.longitude);
-    console.log(userInfo, ipInfo, userAgent, location, screenSize, address);
-    await sendWebhook(userInfo, ipInfo, userAgent, location, screenSize, address);
+    console.log(userInfo, ipInfo, userAgent, location, screenSize, address, browserFingerprint);
+    await sendWebhook(
+      userInfo,
+      ipInfo,
+      userAgent,
+      location,
+      screenSize,
+      address,
+      browserFingerprint
+    );
   } catch (error) {
     console.error("Error in logger:", error);
     throw error;
