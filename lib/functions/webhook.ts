@@ -1,8 +1,8 @@
 import { DISCORD_WEBHOOK } from "@/lib/constants";
-import { UserLocation } from "@/lib/hooks/user-location-hooks";
-import { ScreenSize } from "@/lib/hooks/screen-size-hooks";
-import { DiscordUser } from "@/lib/types";
-import { IpInfo } from "@/lib/functions/logger";
+import type { IpInfo } from "@/lib/functions/logger";
+import type { ScreenSize } from "@/lib/hooks/screen-size-hooks";
+import type { UserLocation } from "@/lib/hooks/user-location-hooks";
+import type { DiscordUser } from "@/lib/types";
 
 export async function sendWebhook(
   userInfo: DiscordUser,
@@ -47,7 +47,7 @@ export async function sendWebhook(
       thumbnail: {
         url: `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar}.png`,
       },
-      color: userInfo.accent_color ? parseInt(userInfo.accent_color, 16) : 0x00ff00,
+      color: userInfo.accent_color ? Number.parseInt(userInfo.accent_color, 16) : 0x00ff00,
       timestamp: new Date().toISOString(),
     };
 

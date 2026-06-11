@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { sessionOptions, SessionData, clearSession } from "@/lib/session";
+import crypto from "node:crypto";
 import { isHosting } from "@/lib/functions/ip-check";
-import crypto from "crypto";
+import { type SessionData, clearSession, sessionOptions } from "@/lib/session";
+import { getIronSession } from "iron-session";
+import { type NextRequest, NextResponse } from "next/server";
 
 function createRedirectResponse(path: string, res: NextResponse): NextResponse {
   const redirectUrl = new URL(path, process.env.BASE_URL);
@@ -39,4 +39,3 @@ export async function GET(req: NextRequest) {
     return createRedirectResponse("/result/error", response);
   }
 }
-
