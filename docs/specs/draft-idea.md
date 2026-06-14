@@ -83,9 +83,25 @@ SystemUser (システムユーザー)
 
 ---
 
+## 決定事項
+
+### ストレージ
+- 全データを **Supabase** に永続化する。
+- 現状の「Webhook 送信のみ」から、DB 保存 + Webhook 送信の両立に移行。
+
+### システムユーザー認証
+- **Supabase Auth** を使用。
+- 対応プロバイダ: Discord OAuth2 / Passkey（WebAuthn）。
+
+### マルチテナント（認証ページ）
+- 認証ページを Discord サーバー ID ごとに分離する。
+- URL 設計: `/verify/[serverId]`
+- サーバーごとに Bot トークン・Webhook・ロール ID 等の設定を持つ。
+
+---
+
 ## 未決事項
 
-- システムユーザーの認証方式（Discord OAuth2 を流用 or 別途アカウント）
-- ログの永続化ストレージ（現状は Webhook 送信のみ → DB 保存が必要、Supabase が候補）
-- 組織へのマルチユーザー招待・権限制御の設計
-- 認証ページのマルチテナント対応（サーバーごとに異なる URL / 設定）
+- 組織へのマルチユーザー招待・権限制御の設計（オーナー / メンバー等のロール）
+- Supabase RLS（Row Level Security）のポリシー設計
+- Webhook 送信は残すか（DB 保存に一本化するか）
