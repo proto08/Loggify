@@ -86,6 +86,11 @@ SystemUser (システムユーザー)
 - サーバーごとの認証設定（VPN ブロック ON/OFF 等）
 - 通知チャネルの設定（Discord Webhook / Telegram Bot）
 
+#### Discord Bot
+- REST API のみ（永続接続なし）
+- Go API から Bot トークンで Discord REST API を直接呼び出す
+- 用途: ロール付与のみ（MVP）
+
 ### ログ閲覧
 - サーバー別・組織横断での認証ログ一覧
 - ユーザー検索（Discord ID / IP / 国 等でフィルタ）
