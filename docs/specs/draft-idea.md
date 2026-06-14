@@ -83,10 +83,54 @@ SystemUser (システムユーザー)
 - ユーザー検索（Discord ID / IP / 国 等でフィルタ）
 - ログ詳細表示
 
+### サーバー登録フロー
+
+システムユーザーがダッシュボードでサーバーを登録する際に入力する情報:
+
+| 項目 | 説明 |
+|---|---|
+| Discord Guild ID | 対象サーバーの ID |
+| Discord Client ID | OAuth2 アプリの Client ID |
+| Discord Client Secret | OAuth2 アプリの Client Secret |
+| Discord Bot Token | ロール付与用 Bot のトークン |
+| Discord Role ID | 認証後に付与するロール |
+| Discord Webhook URL | ログ通知先 Webhook |
+
+登録後、Loggify が内部 UUID を生成し、以下の redirect_uri をシステムユーザーに発行する:
+
+```
+https://loggify.com/api/callback/[server-uuid]
+```
+
+システムユーザーはこの URI を自前の Discord OAuth2 アプリに登録し、
+認証 URL を Discord サーバーに貼る。
+
 ### 認証フロー（マルチテナント）
-- URL: `/verify/[serverId]` でサーバーごとに分離
-- Discord OAuth2 → Turnstile CAPTCHA → ロール付与
-- VPN/プロキシ検出・ブロック
+
+```
+[Discord サーバーに貼る OAuth2 URL]
+https://discord.com/oauth2/authorize
+  ?client_id=[their-client-id]
+  &redirect_uri=https://loggify.com/api/callback/[server-uuid]
+  &scope=identify+email
+  &response_type=code
+
+↓ ユーザーが Discord で認証
+
+GET /api/callback/[server-uuid]?code=...
+  → server-uuid からサーバー設定を取得
+  → code を当該サーバーの Client ID/Secret でトークン交換
+    （Discord が client_id と code の対応を検証するため、
+      UUID の改ざんはトークン交換失敗として弾かれる）
+  → /verify/[server-uuid] にリダイレクト
+
+GET /verify/[server-uuid]
+  → GPS・画面サイズ・ブラウザ指紋収集 + Turnstile CAPTCHA
+
+POST /api/verify
+  → VPN チェック・ログ保存・ロール付与・Webhook 送信
+  → /result/[status] にリダイレクト
+```
 
 ---
 
