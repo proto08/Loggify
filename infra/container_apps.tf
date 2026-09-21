@@ -12,6 +12,8 @@ resource "azurerm_container_app_environment" "this" {
   location                   = azurerm_resource_group.this.location
   log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
   logs_destination           = "log-analytics"
+
+  infrastructure_subnet_id = azurerm_subnet.apps.id
 }
 
 resource "azurerm_container_app" "frontend" {
