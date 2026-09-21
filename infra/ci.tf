@@ -24,6 +24,11 @@ resource "azurerm_role_assignment" "github_ci_acr_push" {
     principal_id = azuread_service_principal.github_ci.object_id
 }
 
+resource "azurerm_role_assignment" "github_ci_acr_reader" {
+    scope = azurerm_container_registry.acr.id
+    role_definition_name = "Reader"
+    principal_id = azuread_service_principal.github_ci.object_id
+}
 resource "azurerm_role_assignment" "github_ci_container_apps" {
     scope = azurerm_resource_group.this.id
     role_definition_name = "Container Apps Contributor"
