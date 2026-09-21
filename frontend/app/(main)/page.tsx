@@ -35,7 +35,7 @@ export default function Home() {
           transition={{ duration: 0.7 }}
         >
           <h1 className="text-6xl md:text-7xl font-bold mb-8 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-300 to-white">
-            Build your own Logger
+            あいうえおBuild your own Logger
           </h1>
         </motion.div>
         <motion.div
