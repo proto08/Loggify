@@ -16,20 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
 
-      - name: Azure login
+      - name: Azure login (OIDC)
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906   # v3.1.0
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push image to ACR
-        run: |
-          az acr build \
-            --registry ${{ vars.ACR_NAME }} \
-            --image frontend:${{ github.sha }} \
-            --image frontend:latest \
-            ./frontend
+      - name: Login to ACR
+        run: az acr login --name ${{ vars.ACR_NAME }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc   # v7.4.0
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ vars.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }}
+            ${{ vars.ACR_NAME }}.azurecr.io/frontend:latest
 
       - name: Update Container App
         run: |
