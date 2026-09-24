@@ -4,7 +4,7 @@ resource "azurerm_postgresql_flexible_server" "this" {
   location            = azurerm_resource_group.this.location
   version             = "18"
 
-  storage_mb = 32768 # 32MB
+  storage_mb = 32768 # 32GB
   sku_name   = "B_Standard_B1ms"
   zone       = "1"
 
@@ -16,6 +16,7 @@ resource "azurerm_postgresql_flexible_server" "this" {
   authentication {
     active_directory_auth_enabled = true
     password_auth_enabled         = false
+    tenant_id = data.azuread_client_config.current.tenant_id
   }
   depends_on = [azurerm_private_dns_zone_virtual_network_link.postgres]
 }
