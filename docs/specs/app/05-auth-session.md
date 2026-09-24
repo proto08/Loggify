@@ -1,64 +1,130 @@
 # 05. 認証・セッション・認可
 
-## 1. システムユーザーの認証
+## 1. 前提: BFF 構成
 
-### 1.1 方式
+```
+Browser ──(Cookie)──▶ Next.js（loggify.com, BFF） ──(サービス認証 + 転送ヘッダー)──▶ FastAPI（内部のみ）
+```
+
+- ブラウザが通信するのは Next.js だけ。FastAPI はインターネットに公開しない（Container Apps の内部 ingress）
+- Cookie はすべて Next.js（`loggify.com`）が発行・保持し、FastAPI には**ヘッダーで**渡す
+- 認証の判定（state の照合、セッションの検証、WebAuthn の検証）は FastAPI が行う。Next.js は値を受け渡すだけで、秘密鍵を持たない
+- ブラウザ → Next.js 間には CORS が不要（同一オリジン）
+
+## 2. Next.js → FastAPI の呼び出し
+
+### 2.1 サービス認証
+
+FastAPI は、Next.js 以外からのリクエストを受け付けない。
+
+| 層 | 対策 |
+|---|---|
+| ネットワーク | FastAPI は内部 ingress のみ（インフラ設計） |
+| アプリ | すべてのリクエストに `Authorization: Bearer <サービストークン>` を必須とする（`/health` を除く） |
+
+サービストークンの方式（D10）:
+
+| 案 | 内容 | 評価 |
+|---|---|---|
+| A. Entra ID のクライアント資格情報（推奨） | Next.js が Managed Identity で backend アプリのトークンを取得し、FastAPI が発行者・audience・app role を検証 | シークレットの受け渡しが不要。`infra/entra.tf` に backend のアプリ登録がすでにある（ただし今の定義はユーザー委任スコープ `access_as_user` なので、app role の追加が必要） |
+| B. 共有シークレット | Key Vault の値を両方に環境変数で渡し、定数時間で比較 | 実装が簡単。ローテーション時は 2 つの値を並行して受け付ける必要がある |
+
+### 2.2 転送ヘッダー
+
+| ヘッダー | 内容 | 使う API |
+|---|---|---|
+| `Authorization` | サービストークン | すべて |
+| `X-Session-Token` | Cookie `__Host-lgf_session` の値 | ダッシュボード系 |
+| `X-Verification-Token` | Cookie `__Host-lgf_vs` の値 | 認証フロー系 |
+| `X-Client-IP` | エンドユーザーの IP（§2.3） | すべて |
+| `X-Client-User-Agent` | ブラウザの User-Agent | すべて |
+| `X-Request-Id` | Next.js で採番（ログの突き合わせ用） | すべて |
+
+FastAPI がこれらのヘッダーを信用するのは、サービス認証を通ったリクエストに限る。
+
+### 2.3 クライアント IP
+
+- Next.js は ingress が付ける `X-Forwarded-For` からクライアント IP を取り出し、`X-Client-IP` として FastAPI に渡す
+  - 取り出し方（右から何番目を使うか、Cloudflare の `CF-Connecting-IP` を優先するか）は前段の構成で決まるため、インフラ設計で確定する
+  - ブラウザが送ってきた `X-Client-IP` は Next.js で必ず捨てる
+- FastAPI 側では `X-Client-IP` 以外の IP 情報（接続元アドレス = Next.js）を使わない
+
+### 2.4 呼び出し元の実装（Next.js）
+
+| 用途 | Next.js の仕組み |
+|---|---|
+| 画面表示のためのデータ取得 | Server Components から `lib/api/`（サーバー専用のクライアント、`import "server-only"`）経由で FastAPI を呼ぶ |
+| 更新系（フォーム送信など） | Server Actions。Next.js が Origin を検査するため、CSRF 対策になる |
+| リダイレクトを伴うもの（OAuth の開始とコールバック、ログアウト） | Route Handlers（`app/api/**/route.ts`） |
+
+FastAPI から 401 が返ったら、Next.js は Cookie を削除して `/login?next=...` へリダイレクトする。
+
+## 3. システムユーザーの認証
+
+### 3.1 方式
 
 | 方式 | 位置づけ |
 |---|---|
 | Discord OAuth2（Loggify 自身の OAuth アプリ、scope は `identify`） | アカウント作成に必須。いつでもログインに使える |
-| Passkey（WebAuthn） | ログイン後に追加で登録できる。登録後は Passkey だけでログインできる |
+| Passkey（WebAuthn） | ログイン後に追加で登録する。登録後は Passkey だけでログインできる |
 
-- アカウントの復旧は Discord ログインで行う（メールによる復旧は持たない）
-- WebAuthn の設定: `RPID = loggify.com`、`RPOrigins = [https://loggify.com]`、`UserVerification = preferred`、discoverable credential（ユーザー名の入力なしでログイン）
+- アカウントの復旧は Discord ログインで行う
+- WebAuthn: `rp_id = loggify.com`、`origin = https://loggify.com`、`user_verification = preferred`、discoverable credential。FastAPI で `py_webauthn` を使って検証する
 
-### 1.2 Discord ログインの流れ
-
-```
-GET /v1/auth/discord/login?next=/orgs/xxx
-  → state = 32 バイトの乱数、Cookie lgf_oauth（state と next を HMAC で署名したもの。5 分、Path=/v1/auth）
-  → 302 Discord
-GET /v1/auth/discord/callback?code&state
-  → Cookie の state と照合 → code を交換 → /users/@me を取得
-  → system_users を discord_id で upsert
-  → auth_sessions を作成 → Cookie lgf_at / lgf_rt を発行
-  → 302 https://loggify.com{next}（next は "/" で始まる相対パスのみ許可）
-```
-
-## 2. トークンとセッション
-
-| 名前 | 中身 | 有効期限 | Cookie 属性 |
-|---|---|---|---|
-| `lgf_at` | アクセストークン（JWT, HS256） | 15 分 | `HttpOnly; Secure; SameSite=Lax; Domain=loggify.com; Path=/` |
-| `lgf_rt` | リフレッシュトークン（32 バイトの乱数） | 30 日（絶対期限）、14 日使われなければ失効 | `HttpOnly; Secure; SameSite=Strict; Domain=api.loggify.com; Path=/v1/auth` |
-
-- `lgf_at` を `Domain=loggify.com` にするのは、Next.js の Server Components で Cookie を読み、API に転送するため
-- JWT のクレーム: `{ sub: system_user_id, sid: auth_session_id, iat, exp }`
-  - 組織のロールは JWT に**入れない**（変更がすぐ反映されるよう、リクエストごとに DB の `org_members` を引く）
-  - `is_sysadmin` も入れず、`/admin/*` では DB で確認する
-- 署名鍵は環境変数 `JWT_SIGNING_KEYS`（ローテーション用に複数の鍵を持つ。`kid` ヘッダーで選ぶ）
-
-### 2.1 リフレッシュ
+### 3.2 Discord ログイン
 
 ```
-POST /v1/auth/refresh（lgf_rt）
-  → hash(rt) = refresh_token_hash のセッションを探す
-       見つかった     → 新しい rt を発行し、previous_token_hash に旧値を移して更新 → 新しい at / rt を返す
-       previous と一致 → 再利用（盗用の疑い）と判断してセッションを失効 → 401
-       それ以外        → 401
+Browser  GET /api/auth/discord/login?next=/orgs/xxx                       （Next Route Handler）
+Next     POST /v1/auth/discord/authorize { next }                          → FastAPI
+FastAPI  state を生成し { authorize_url, state_cookie } を返す
+         state_cookie = sign(state, next, 有効期限 5 分)
+Next     Set-Cookie: __Host-lgf_oauth=state_cookie → 302 authorize_url
+   ⋮ Discord で許可
+Browser  GET /api/auth/discord/callback?code&state                        （Next Route Handler）
+Next     POST /v1/auth/discord/callback { code, state, state_cookie }      → FastAPI
+FastAPI  署名と state の一致を検証 → code を交換 → /users/@me
+         → system_users を upsert → auth_sessions を作成
+         → { session_token, expires_at, next } を返す
+Next     Set-Cookie: __Host-lgf_session=session_token、__Host-lgf_oauth を削除 → 302 next
 ```
 
-- フロントは 401 `token_expired` を受け取ったら 1 回だけ refresh して再試行する。同時に複数のリクエストが refresh しないよう、フロント側で 1 本にまとめる
-- ログアウトや全端末ログアウトは `auth_sessions.revoked_at` を設定する。アクセストークンは最大 15 分有効なまま残るため、`/me/sessions` の操作や権限変更などの重要な操作では、`sid` が失効していないか DB で確認する
+- `next` は `/` で始まり `//` で始まらない相対パスのみ許可する（オープンリダイレクト対策）。FastAPI で検証する
+- Discord の redirect_uri は `https://loggify.com/api/auth/discord/callback`
 
-### 2.2 CSRF 対策
+### 3.3 Passkey
 
-- SameSite=Lax/Strict に加え、状態を変更するリクエストでは `Origin` ヘッダーが許可リストに含まれることを必須にする
-- カスタムヘッダー `X-Loggify-Client: web` を必須にする。単純なフォーム送信では付けられないため、CORS のプリフライトが強制される
+- ログイン: Server Action → `POST /v1/auth/passkey/login/begin` → `{ options, challenge_token }`。Next.js は `challenge_token` を Cookie `__Host-lgf_webauthn`（5 分）に保存し、`finish` のときに渡す。成功すると `session_token` が返る
+- 登録: ログイン済みで、セッションの作成から 10 分以内であること（再ログインを求める）
 
-## 3. 認可（RBAC）
+## 4. セッション
 
-### 3.1 権限マトリクス
+BFF 構成ではブラウザが FastAPI を直接呼ばないため、JWT とリフレッシュトークンは使わない。**サーバー側で管理する不透明なセッショントークン**を 1 本だけ使う。
+
+| 項目 | 仕様 |
+|---|---|
+| トークン | 32 バイトの乱数（base64url）。DB には SHA-256 のハッシュだけを保存 |
+| Cookie | `__Host-lgf_session`（`HttpOnly; Secure; SameSite=Lax; Path=/`、Domain 指定なし） |
+| 有効期限 | 最終利用から 7 日（スライディング）、作成から最大 30 日（絶対） |
+| 延長 | FastAPI は `last_used_at` を更新し、残りが 3 日を切ったらレスポンスヘッダー `X-Session-Expires-At` で新しい期限を返す。Next.js は Cookie の `Max-Age` を更新する（トークン自体は変えない） |
+| 失効 | ログアウト・全端末ログアウト・アカウント削除で `revoked_at` を設定。リクエストのたびに DB を確認するため、失効はすぐに効く |
+| ロール | セッションには持たせない。リクエストのたびに `org_members` を参照する |
+
+ログアウトは Route Handler `POST /api/auth/logout` → `POST /v1/auth/logout` → Cookie 削除 → `/` へリダイレクト。
+
+### 4.1 Cookie 一覧
+
+| Cookie | 用途 | 有効期限 |
+|---|---|---|
+| `__Host-lgf_session` | システムユーザーのセッション | 7 日（スライディング） |
+| `__Host-lgf_oauth` | Discord ログインの state | 5 分 |
+| `__Host-lgf_webauthn` | Passkey のチャレンジ | 5 分 |
+| `__Host-lgf_vs` | エンドユーザーの認証セッション | 10 分 |
+
+すべて `HttpOnly; Secure; SameSite=Lax; Path=/`。`__Host-` を付けて、サブドメインからの上書きを防ぐ。
+
+## 5. 認可（RBAC）
+
+### 5.1 権限マトリクス
 
 | 操作 | viewer | admin | owner | sysadmin |
 |---|:-:|:-:|:-:|:-:|
@@ -77,18 +143,26 @@ POST /v1/auth/refresh（lgf_rt）
 | オーナー移譲・組織削除 | | | ✓ | |
 | デフォルト ASN の管理・サーバーの強制停止 | | | | ✓ |
 
-- admin による招待は viewer ロールのみ、admin の招待は owner のみとし、admin が増えていく経路を owner に限定する
+- admin の招待は owner だけが発行できる（D9）
 - owner の退会・アカウント削除は、移譲または組織削除が済むまで 409 にする。owner 不在の状態は作らない
 
-### 3.2 実装
+### 5.2 実装（FastAPI）
 
-- `middleware.RequireLogin` — JWT を検証し、`ctx` に `system_user_id` と `sid` を設定する
-- `middleware.RequireOrgRole(min)` — パスの `org_id`、または `server_id` / `log_id` から引いた `org_id` について `org_members` を参照し、ロールが不足または非所属なら **404**
-- repository の関数は `orgID` を引数に取ることを必須にし、ID だけで取得する関数を作らない（IDOR 対策）
+FastAPI の依存性注入（`Depends`）で実装する。
 
-## 4. ASN ルールの評価
+| 依存関数 | 役割 |
+|---|---|
+| `require_service` | サービストークンの検証（ルーター全体に適用） |
+| `current_user` | `X-Session-Token` を検証し、`SystemUser` とセッションを返す。失敗なら 401 |
+| `org_role(min_role)` | パスの `org_id`、または `server_id` / `log_id` から引いた `org_id` について `org_members` を参照する。ロールが不足、または非所属なら **404** |
+| `require_sysadmin` | `system_users.is_sysadmin` を DB で確認する |
 
-### 4.1 優先順位（D4）
+- repository の関数は `org_id` を必須の引数にし、ID だけで取得する関数を作らない（IDOR 対策）
+- Next.js 側でもロールに応じてボタンの表示を切り替えるが、判定の正本は FastAPI
+
+## 6. ASN ルールの評価
+
+### 6.1 優先順位（D4）
 
 より具体的なスコープのルールが優先される。
 
@@ -99,60 +173,68 @@ POST /v1/auth/refresh（lgf_rt）
 4. どれにも一致しない    → allow
 ```
 
-- 組織でブロックした ASN をサーバーで allow できる（組織ルールは「組織の既定値」という位置づけ）
-- サーバーの `block_vpn = false` のときは評価せずに allow（`asn_decision.layer = "disabled"`）
+- 組織でブロックした ASN を、サーバーで allow に上書きできる
+- サーバーの `block_vpn = false` のときは評価しない（`layer = "disabled"`）
 - 判定結果は `asn_decision = { action, layer: "server" | "org" | "default" | "none" | "disabled" }` としてログに残す
 
-### 4.2 デフォルトリストの更新（D5）
+### 6.2 デフォルトリストの更新（D5）
 
-- 組織・サーバーは常に最新のデフォルトリストを参照する（スナップショットは取らない）
-- 更新時の通知は MVP では行わない
+組織・サーバーは常に最新のデフォルトリストを参照する（スナップショットは取らない）。更新時の通知は MVP では行わない。
 
-## 5. エンドユーザーの認証フロー（詳細）
+## 7. エンドユーザーの認証フロー（詳細）
 
-### 5.1 start
-
-```
-GET /v1/verify/{server_id}/start?consent={version}
-  1. servers.status = active でなければ → 302 /result/{id}/unavailable
-  2. consent がサーバーの現在の同意バージョンと一致しなければ → 302 /v/{id}（同意画面へ戻す）
-  3. レート制限（IP）
-  4. verification_sessions を作成（oauth_state を生成、有効期限 10 分）
-  5. Cookie lgf_vs = sign(session_id)
-       HttpOnly; Secure; SameSite=Lax; Domain=loggify.com; Path=/; Max-Age=600
-  6. 302 https://discord.com/oauth2/authorize?client_id=…&redirect_uri=…&scope=identify[+email]&state=…&prompt=none
-```
-
-### 5.2 callback
+### 7.1 start
 
 ```
-GET /v1/verify/{server_id}/callback?code&state
-  1. lgf_vs からセッションを取得し、server_id と state を照合（一致しなければ error）
-  2. サーバーの Client ID / Secret で code を交換
-  3. GET /users/@me で Discord ユーザーを取得し、verification_sessions.discord_user に保存
-  4. Discord のアクセストークン・リフレッシュトークンは破棄する（DB にも通知にも出さない）
-  5. 302 https://loggify.com/verify/{server_id}
+Browser  /v/[serverId] で「同意して続ける」
+         → GET /api/verify/{server_id}/start?consent={version}             （Next Route Handler）
+Next     POST /v1/verify/{server_id}/start { consent_version }              → FastAPI
+FastAPI  1. servers.status = active でなければ { status: "unavailable" }
+         2. consent_version が現在の値と違えば { status: "consent_outdated" }
+         3. レート制限（IP）
+         4. verification_sessions を作成（oauth_state を生成、有効期限 10 分）
+         5. { authorize_url, verification_token, expires_at } を返す
+Next     Set-Cookie: __Host-lgf_vs=verification_token → 302 authorize_url
+         （unavailable → /result/{id}/unavailable、consent_outdated → /v/{id}）
 ```
 
-### 5.3 complete
+authorize_url の中身: `https://discord.com/oauth2/authorize?client_id=…&redirect_uri=https://loggify.com/api/verify/{server_id}/callback&scope=identify[+email]&state=…&response_type=code&prompt=none`
+
+### 7.2 callback
 
 ```
-POST /v1/verify/{server_id}/complete
-  1. lgf_vs を検証 → セッションが有効・未完了・discord_user あり、でなければ "expired"
-  2. レート制限（IP、server_id + discord_id） → "rate_limited"
-  3. Turnstile を検証（remoteip も渡す） → 失敗なら "captcha"
-  4. collect_gps = required かつ location = null → "declined"
-  5. クライアント IP → ipinfo（ASN・国・都市・ISP）。失敗したら ASN 不明として続ける
-  6. ASN 評価 → block なら "vpn"
-  7. GPS があれば逆ジオコーディング（失敗しても続ける）
-  8. Bot で PUT /guilds/{guild_id}/members/{user_id}/roles/{role_id}
-       失敗したら result = role_failed、servers.last_check_error に記録し、ユーザーには "error" を返す
-  9. verification_logs に INSERT（1〜8 のどこで終わっても、2 以降の結果は必ず記録する）
- 10. 通知チャネルへ送信（同期・リトライなし、タイムアウト 3 秒）→ notify_status を更新
- 11. verification_sessions.completed_at を設定し、lgf_vs を削除
- 12. 200 { status }
+Browser  GET /api/verify/{server_id}/callback?code&state                   （Next Route Handler）
+Next     POST /v1/verify/{server_id}/callback { code, state }
+         + X-Verification-Token                                             → FastAPI
+FastAPI  1. トークンからセッションを取得し、server_id と state を照合
+         2. サーバーの Client ID / Secret で code を交換
+         3. GET /users/@me → verification_sessions.discord_user に保存
+         4. Discord のアクセストークン・リフレッシュトークンは破棄（DB にも通知にも出さない）
+Next     成功 → 302 /verify/{server_id}、失敗 → 302 /result/{server_id}/error
 ```
 
-- 3〜8 の途中で終わった場合も、9〜11 は実行する（`captcha`・`vpn` などの失敗もログに残す）
-- 1 と 2 で終わった場合（セッションなし・レート制限）はログに残さない（Discord ID が分からない、または大量の試行を記録しないため）
-- 通知の本文には、ダッシュボードのログ詳細へのリンクと要約（Discord ユーザー・結果・国・ASN 判定）のみを含める。IP・GPS 座標・住所などの詳細個人データは通知に**含めない**（06 参照）
+### 7.3 complete
+
+`/verify/[serverId]` のページは Server Component で `GET /v1/verify/{id}/session` を呼んで表示する。送信は Server Action で行う。
+
+```
+Server Action  POST /v1/verify/{server_id}/complete + X-Verification-Token   → FastAPI
+FastAPI  1. セッションが有効・未完了・discord_user あり、でなければ "expired"
+         2. レート制限（IP、server_id + discord_id） → "rate_limited"
+         3. Turnstile を検証（remoteip = X-Client-IP） → 失敗なら "captcha"
+         4. collect_gps = required かつ location = null → "declined"
+         5. X-Client-IP → ipinfo（ASN・国・都市・ISP）。失敗したら ASN 不明として続ける
+         6. ASN 評価 → block なら "vpn"
+         7. GPS があれば逆ジオコーディング（失敗しても続ける）
+         8. Bot で PUT /guilds/{guild_id}/members/{user_id}/roles/{role_id}
+              失敗したら result = role_failed、servers.last_check_error に記録し、ユーザーには "error"
+         9. verification_logs に INSERT
+        10. 通知チャネルへ送信（同期・リトライなし・タイムアウト 3 秒）→ notify_status を更新
+        11. verification_sessions.completed_at を設定
+        12. { status } を返す
+Next     __Host-lgf_vs を削除 → redirect("/result/{server_id}/{status}")
+```
+
+- 3〜8 の途中で終わった場合も 9〜11 は実行する（`captcha`・`vpn` などの失敗もログに残す）
+- 1・2 で終わった場合はログに残さない
+- 通知には要約とダッシュボードへのリンクのみを含め、IP・GPS・住所は含めない（D8）

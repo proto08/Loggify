@@ -26,23 +26,52 @@ Discord サーバーの参加者を認証（CAPTCHA・VPN 判定・ロール付�
 ## 4. システム構成
 
 ```
-          ┌──────────────── loggify.com ────────────────┐
-Browser ──┤ Next.js (UI のみ: SSR/CSR)                   │
-          └──────────────────────────────────────────────┘
-             │ fetch (Cookie, credentials: include)
-             ▼
-          ┌──────────── api.loggify.com ────────────┐       ┌── Discord API (OAuth2 / Bot)
-          │ Go + Gin                                 │──────▶├── Cloudflare Turnstile
-          │  handler → service → repository          │       ├── ipinfo.io
-          └──────────────────────────────────────────┘       ├── gps-coordinates.net
-             │                                               └── Discord Webhook / Telegram
-             ▼
-          PostgreSQL
+                 ┌─────────── loggify.com（公開） ───────────┐
+Browser ─Cookie─▶│ Next.js = BFF                               │
+                 │  Server Components / Server Actions /       │
+                 │  Route Handlers（OAuth のリダイレクトのみ） │
+                 └─────────────────────────────────────────────┘
+                        │ サービス認証 + X-Session-Token など
+                        ▼
+                 ┌──────── FastAPI（内部 ingress のみ） ───────┐      ┌── Discord API (OAuth2 / Bot)
+                 │ routers → services → repositories           │─────▶├── Cloudflare Turnstile
+                 └─────────────────────────────────────────────┘      ├── ipinfo.io
+                        │                                              ├── gps-coordinates.net
+                        ▼                                              └── Discord Webhook / Telegram
+                    PostgreSQL
 ```
 
-- Next.js は API を呼び出して描画するだけにする。Route Handler（`app/api/*`）は廃止する
-- 外部サービスの呼び出しとシークレットの保持はすべて Go API が担う
-- Go のパッケージ構成は既存の雛形に合わせる: `handler/`（HTTP 入出力）、`service/`（業務ロジック）、`repository/`（DB）、`model/`（エンティティ）、`middleware/`（認証・レート制限など）、`config/`（設定）。外部 API クライアントは `client/`（`discord`, `turnstile`, `ipinfo`, `geocode`, `notify`）を新設する
+### 4.1 役割分担
+
+| 層 | 持つもの | 持たないもの |
+|---|---|---|
+| Next.js（BFF） | 画面、Cookie の発行と削除、FastAPI 呼び出しの集約、入力の一次検証（zod） | 業務ロジック、DB 接続、外部サービスのシークレット（Discord・Turnstile のシークレットキーなど） |
+| FastAPI | 業務ロジック、認証の判定、認可、DB、外部サービスの呼び出し、定期ジョブ | Cookie（ヘッダーで受け取るだけ）、画面 |
+
+- ブラウザが通信するのは Next.js だけ。FastAPI はインターネットに公開しない
+- ブラウザで必要な公開値（Turnstile のサイトキー）は、FastAPI から取得して画面に埋め込む
+
+### 4.2 FastAPI のディレクトリ構成
+
+```
+backend/
+  app/
+    main.py            # FastAPI アプリの生成、ルーター登録、例外ハンドラー
+    core/              # 設定（pydantic-settings）、暗号化、ログ
+    deps/              # Depends 用: サービス認証、current_user、org_role、DB セッション
+    routers/           # HTTP の入出力のみ（auth, me, orgs, servers, logs, verify, admin, public）
+    schemas/           # Pydantic のリクエスト/レスポンス
+    services/          # 業務ロジック
+    repositories/      # DB アクセス（org_id を必須引数にする）
+    models/            # SQLAlchemy のモデル
+    clients/           # 外部 API: discord, turnstile, ipinfo, geocode, notify
+    jobs/              # 定期ジョブ（python -m app.jobs <name>）
+  migrations/          # Alembic
+  tests/
+  pyproject.toml       # uv で管理
+```
+
+既存の `backend/`（Go の雛形）はこの構成で置き換える。
 
 ## 5. 機能一覧
 

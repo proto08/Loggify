@@ -3,10 +3,10 @@
 ## アーキテクチャ概要
 
 ```
-[Next.js (frontend)]  →  [Go (API)]  →  [PostgreSQL]
+[Browser] → [Next.js (BFF, 公開)] → [FastAPI (内部のみ)] → [PostgreSQL]
 ```
 
-フロントエンドと API は分離した独立サービス。Docker Compose で自宅サーバーにホスト。
+フロントエンドと API は分離した独立サービス。ブラウザは Next.js とだけ通信し、FastAPI は Next.js のサーバー側から呼ぶ（BFF 構成）。Docker Compose で自宅サーバーにホスト。
 
 ---
 
@@ -24,8 +24,12 @@
 
 | 項目 | 選定 |
 |---|---|
-| 言語 | Go |
-| ORM | GORM |
+| 言語 | Python |
+| フレームワーク | FastAPI + Pydantic v2 |
+| ORM / DB ドライバ | SQLAlchemy 2.x（async）+ asyncpg |
+| マイグレーション | Alembic |
+| HTTP クライアント | httpx |
+| パッケージ管理 | uv |
 
 ---
 
@@ -33,9 +37,9 @@
 
 | 項目 | 選定 |
 |---|---|
-| Discord OAuth2 | `golang.org/x/oauth2` |
-| Passkey (WebAuthn) | `go-webauthn/webauthn` |
-| セッション | JWT（`golang-jwt/jwt`） |
+| Discord OAuth2 | httpx で直接実装（トークン交換と `/users/@me` のみ） |
+| Passkey (WebAuthn) | `py_webauthn`（ブラウザ側は `@simplewebauthn/browser`） |
+| セッション | サーバー側で管理する不透明トークン（DB）。Cookie は Next.js が保持 |
 
 ---
 

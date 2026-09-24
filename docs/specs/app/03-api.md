@@ -1,18 +1,21 @@
 # 03. API 仕様
 
+本章は **FastAPI の内部 API**（Next.js のサーバー側だけが呼ぶ）を定義する。ブラウザから見える Next.js 側のルートは §5 にまとめる。
+Next.js と FastAPI の間の認証・転送ヘッダーは 05 §2 を参照。
+
 ## 1. 共通仕様
 
 | 項目 | 仕様 |
 |---|---|
-| ベース URL | `https://api.loggify.com/v1` |
-| バージョニング | URL プレフィックス `/v1`。互換性のない変更時に `/v2` |
+| ベース URL | `http://<backend の内部ホスト名>:8000/v1`（環境変数 `BACKEND_URL` で Next.js に渡す） |
+| バージョニング | URL プレフィックス `/v1`。呼び出し元は Next.js だけなので、互換性のない変更は Next.js と同時にデプロイする |
 | 形式 | JSON（`Content-Type: application/json`）、UTF-8 |
 | 命名 | JSON のキーは `snake_case`、ID は UUID 文字列。Discord の ID（snowflake）は **文字列** で返す（JS の数値精度対策） |
 | 日時 | RFC 3339（UTC）例: `2026-09-24T12:00:00Z` |
-| 認証 | Cookie `lgf_at`（アクセストークン）。詳細は 05 |
-| CSRF | 状態を変更するメソッド（POST/PUT/PATCH/DELETE）では `Origin` が許可リストに含まれることを必須とする。加えてヘッダー `X-Loggify-Client: web` を必須とする |
-| CORS | `Access-Control-Allow-Origin: https://loggify.com`（開発時は `http://localhost:3000`）、`Allow-Credentials: true` |
-| バリデーション | Gin の binding（go-playground/validator）。エラーは `validation_failed` で返す |
+| サービス認証 | `Authorization: Bearer <サービストークン>`（全エンドポイント。`/health` を除く） |
+| ユーザー認証 | `X-Session-Token`（ダッシュボード系）、`X-Verification-Token`（認証フロー系） |
+| スキーマ | Pydantic v2 のモデルで定義する。FastAPI が出力する OpenAPI から、Next.js 用の TypeScript 型を生成する（`openapi-typescript`） |
+| OpenAPI の公開 | `/docs`・`/openapi.json` は開発環境のみ有効 |
 
 ### 1.1 エラーレスポンス
 
@@ -28,12 +31,12 @@
 
 | HTTP | code | 用途 |
 |---|---|---|
-| 400 | `bad_request` / `validation_failed` | 形式・値の誤り |
-| 401 | `unauthenticated` / `token_expired` | 未ログイン・アクセストークン期限切れ（フロントは refresh して再試行） |
-| 403 | `forbidden` / `csrf_rejected` | 権限不足・CSRF 検査失敗 |
+| 400 | `bad_request` | 形式の誤り |
+| 401 | `unauthenticated` / `service_unauthenticated` | セッションが無効（Next.js はログイン画面へ） / サービストークンが無効 |
+| 403 | `forbidden` | 権限不足（組織に所属しているがロールが足りない場合は 404 を使う。403 は sysadmin 専用 API など） |
 | 404 | `not_found` | 存在しない、または**権限のない組織のリソース**（存在を秘匿する） |
 | 409 | `conflict` / `limit_exceeded` | 一意制約違反・上限超過 |
-| 422 | `discord_check_failed` など | 外部サービスでの検証失敗 |
+| 422 | `validation_failed` / `discord_check_failed` など | 入力値の誤り（FastAPI 標準の 422 を上記の形式に変換する）・外部サービスでの検証失敗 |
 | 429 | `rate_limited` | レート制限（`Retry-After` ヘッダー付き） |
 | 500 | `internal` | その他 |
 
@@ -46,8 +49,8 @@
 
 以下の表の「権限」列の意味:
 
-- `public`: 認証不要
-- `login`: ログイン済み
+- `public`: サービス認証のみ（ユーザー認証は不要）
+- `login`: `X-Session-Token` が有効
 - `viewer` / `admin` / `owner`: 対象組織でそのロール以上
 - `sysadmin`: システム管理者
 
@@ -57,11 +60,10 @@
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
-| GET | `/auth/discord/login?next=` | public | state を Cookie に保存し、Discord 認可画面へ 302 |
-| GET | `/auth/discord/callback` | public | code を交換 → ユーザーを作成または更新 → Cookie 発行 → `next` へ 302 |
-| POST | `/auth/passkey/login/begin` | public | WebAuthn のチャレンジを発行 |
-| POST | `/auth/passkey/login/finish` | public | 検証 → Cookie 発行 |
-| POST | `/auth/refresh` | public（refresh Cookie 必須） | トークンをローテーション |
+| POST | `/auth/discord/authorize` | public | `{ next }` → `{ authorize_url, state_cookie }` |
+| POST | `/auth/discord/callback` | public | `{ code, state, state_cookie }` → `{ session_token, expires_at, next }` |
+| POST | `/auth/passkey/login/begin` | public | → `{ options, challenge_token }` |
+| POST | `/auth/passkey/login/finish` | public | `{ credential, challenge_token }` → `{ session_token, expires_at }` |
 | POST | `/auth/logout` | login | 現在のセッションを失効させる |
 
 ### 2.2 アカウント `/me`
@@ -165,11 +167,11 @@
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
-| GET | `/public/servers/{server_id}` | public | `{ name, icon_url, status, collect_gps, collect_email, consent_version }`（`/v` と `/result` の表示用） |
-| GET | `/verify/{server_id}/start?consent={version}` | public | 認証セッションを作成し Cookie `lgf_vs` を発行 → Discord 認可画面へ 302 |
-| GET | `/verify/{server_id}/callback?code=&state=` | public | state を検証 → code を交換 → Discord ユーザーを取得 → ユーザートークンを破棄 → `/verify/{server_id}` へ 302 |
-| GET | `/verify/{server_id}/session` | public（`lgf_vs` 必須） | `{ discord_user: { username, avatar_url }, collect_gps, turnstile_site_key, expires_at }` |
-| POST | `/verify/{server_id}/complete` | public（`lgf_vs` 必須） | 下記 |
+| GET | `/public/servers/{server_id}` | public | `{ name, icon_url, status, collect_gps, collect_email, retention_days, consent_version }`（`/v` と `/result` の表示用） |
+| POST | `/verify/{server_id}/start` | public | `{ consent_version }` → `{ authorize_url, verification_token, expires_at }`、または `{ status: "unavailable" \| "consent_outdated" \| "rate_limited" }` |
+| POST | `/verify/{server_id}/callback` | `X-Verification-Token` | `{ code, state }` → `{ ok: true }` |
+| GET | `/verify/{server_id}/session` | `X-Verification-Token` | `{ discord_user: { username, avatar_url }, collect_gps, turnstile_site_key, expires_at }` |
+| POST | `/verify/{server_id}/complete` | `X-Verification-Token` | 下記 |
 
 `POST /verify/{server_id}/complete` のリクエスト:
 
@@ -214,8 +216,39 @@ MVP はプロセス内メモリ（トークンバケット）で実装する。�
 | `/auth/*` | IP | 30 回 / 10 分 |
 | ログイン済み API | system_user_id | 300 回 / 分 |
 
-## 4. クライアント IP の決定
+## 4. クライアント IP
 
-- Container Apps などのリバースプロキシの後ろで動くため、`X-Forwarded-For` を使う
-- Gin の `SetTrustedProxies` に信頼するプロキシの範囲だけを設定し、`c.ClientIP()` の値を採用する。ヘッダーの先頭要素をそのまま信用しない
-- Cloudflare を前段に置く場合は `CF-Connecting-IP` を優先する（インフラ設計で確定）
+FastAPI は `X-Client-IP` ヘッダーの値だけを使う（Next.js が設定する。05 §2.3）。レート制限・Turnstile の `remoteip`・ipinfo の照会・ログの `ip` はすべてこの値を使う。
+
+## 5. Next.js 側のルート（ブラウザから見える入口）
+
+画面（ページ）は 02 を参照。ここでは画面以外の入口をまとめる。
+
+### 5.1 Route Handlers
+
+| メソッド | パス | 呼ぶ FastAPI | 役割 |
+|---|---|---|---|
+| GET | `/api/auth/discord/login?next=` | `POST /v1/auth/discord/authorize` | `__Host-lgf_oauth` を設定し、Discord へ 302 |
+| GET | `/api/auth/discord/callback` | `POST /v1/auth/discord/callback` | `__Host-lgf_session` を設定し、`next` へ 302 |
+| POST | `/api/auth/logout` | `POST /v1/auth/logout` | Cookie を削除し、`/` へ 302 |
+| GET | `/api/verify/[serverId]/start?consent=` | `POST /v1/verify/{id}/start` | `__Host-lgf_vs` を設定し、Discord へ 302 |
+| GET | `/api/verify/[serverId]/callback` | `POST /v1/verify/{id}/callback` | `/verify/[serverId]` または `/result/...` へ 302 |
+
+Discord に登録する redirect_uri:
+
+| 用途 | redirect_uri | 登録先 |
+|---|---|---|
+| システムユーザーのログイン | `https://loggify.com/api/auth/discord/callback` | Loggify の OAuth アプリ |
+| エンドユーザーの認証 | `https://loggify.com/api/verify/{server_id}/callback` | 各サーバー運営者の OAuth アプリ |
+
+### 5.2 Server Actions
+
+更新系の操作はすべて Server Actions で実装し、`lib/actions/` に置く。FastAPI の更新系エンドポイントと 1 対 1 で対応させる（例: `updateServerSettings(serverId, input)` → `PATCH /v1/servers/{id}`）。
+
+- Server Actions の中で入力を zod で検証し、FastAPI のエラー（`error.code` / `details`）をフォームに表示できる形で返す
+- Passkey のログイン・登録（begin / finish）と、認証フローの `complete` も Server Actions で行う
+
+### 5.3 FastAPI クライアント（Next.js）
+
+- `lib/api/client.ts`（`import "server-only"`）に集約する。サービストークンの取得・転送ヘッダーの付与・エラーの変換を 1 か所で行う
+- 型は FastAPI の OpenAPI から生成した `lib/api/schema.d.ts` を使う

@@ -11,15 +11,15 @@
 | 02 | [02-screens.md](./02-screens.md) | 画面一覧・画面遷移 |
 | 03 | [03-api.md](./03-api.md) | REST API 仕様（frontend ↔ backend） |
 | 04 | [04-data-model.md](./04-data-model.md) | データモデル（PostgreSQL） |
-| 05 | [05-auth-session.md](./05-auth-session.md) | 認証・セッション・RBAC・エンドユーザー認証フロー |
+| 05 | [05-auth-session.md](./05-auth-session.md) | BFF とサービス認証・システムユーザー認証・セッション・RBAC・エンドユーザー認証フロー |
 | 06 | [06-privacy.md](./06-privacy.md) | 個人データの同意・保存期間・アクセス権 |
 
 ## 設計上の前提
 
-- フロントエンド: Next.js（App Router）。**UI 専用**とし、業務ロジック・外部 API 呼び出し・シークレット保持は持たない
-- バックエンド: Go + Gin（`backend/` に雛形あり）+ GORM
+- **BFF 構成**: ブラウザは Next.js（`loggify.com`）とだけ通信する。FastAPI は Next.js のサーバー側からのみ呼ばれ、インターネットに公開しない
+- フロントエンド / BFF: Next.js（App Router）。画面・Cookie 管理・FastAPI 呼び出しを担当し、業務ロジックと外部サービスのシークレットは持たない
+- バックエンド: FastAPI（Python）+ SQLAlchemy 2.x + Alembic
 - DB: PostgreSQL
-- ドメイン: `loggify.com`（frontend）/ `api.loggify.com`（backend）
 - シークレット（DB 接続情報・暗号鍵など）は Key Vault 等から環境変数で注入（詳細はインフラ設計）
 
 ## ドラフトから変更・具体化した点
@@ -27,11 +27,12 @@
 | 項目 | ドラフト | 本設計 | 理由 |
 |---|---|---|---|
 | 認証開始 URL | Discord の authorize URL を直接貼る | Loggify の開始 URL `https://loggify.com/v/{server_id}` を貼る | OAuth `state` による CSRF 対策、Discord 遷移前の同意画面表示のため |
-| redirect_uri | `https://loggify.com/api/callback/{uuid}` | `https://api.loggify.com/v1/verify/{server_id}/callback` | コールバックは Go API で処理する（Next.js に処理を持たせない） |
+| redirect_uri | `https://loggify.com/api/callback/{uuid}` | `https://loggify.com/api/verify/{server_id}/callback` | Next.js の Route Handler で受け、検証は FastAPI に任せる |
 | VPN チェックの位置 | コールバック時 | 認証完了（`complete`）時 | 実際に認証を送信した IP で判定するため |
 | OAuth scope | `identify email` | `identify` のみ（email はサーバー設定で任意に ON） | データ最小化 |
 | ログの保存期間 | 永久保存 | 詳細な個人データは保存期間（既定 90 日）後に消去し、要約レコードのみ残す | 06-privacy.md 参照 |
 | サーバー削除時のログ | 紐付けを切って保持 | サーバーを論理削除し、30 日後にログを物理削除 | 孤立データを作らない。30 日は誤操作から復旧できる期間 |
+| システムユーザーのセッション | JWT（Access + Refresh） | サーバー側で管理する不透明トークン 1 本（Cookie は Next.js が保持） | BFF 構成ではブラウザが API を直接呼ばないため、JWT とリフレッシュの仕組みが不要 |
 | 通知先 | サーバー設定に Webhook URL を持つ | `notification_channels` テーブルに分離 | Telegram 追加時にスキーマ変更が不要 |
 | Discord ユーザートークン | 現行実装は refresh_token を Webhook に送信 | **保存も送信もしない**。ロール付与が済んだら破棄 | 第三者のアカウントを操作できるトークンのため |
 
@@ -50,6 +51,7 @@
 | D7 | システム管理者によるログ閲覧 | 閲覧可能だが、すべて監査ログに記録 | 05, 06 |
 | D8 | 通知（Webhook）に載せる内容 | 要約とダッシュボードへのリンクのみ。IP・GPS・住所は載せない（現行実装から変更） | 05, 06 |
 | D9 | admin が発行できる招待のロール | viewer のみ（admin の招待は owner だけ。ドラフトでは admin も admin を招待できた） | 05 |
+| D10 | Next.js → FastAPI のサービス認証 | Entra ID のクライアント資格情報（Managed Identity + app role）。代替は共有シークレット | 05 |
 
 ## docs/todo.md との対応
 
