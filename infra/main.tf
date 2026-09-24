@@ -7,6 +7,21 @@ resource "random_string" "suffix" {
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
   short_name  = replace("${var.project_name}${var.environment}${random_string.suffix.result}", "-", "")
+
+  frontend_env_vars = {
+    API_URL            = "https://${azurerm_container_app.backend.ingress[0].fqdn}"
+    AZURE_AD_CLIENT_ID = azuread_application.frontend.client_id
+    AZURE_AD_TENANT_ID = data.azuread_client_config.current.tenant_id
+  }
+
+  backend_env_vars = {
+    AZURE_STORAGE_ACCOUNT_NAME = azurerm_storage_account.this.name
+    AZURE_CLIENT_ID            = azurerm_user_assigned_identity.backend_app.client_id
+    POSTGRES_HOST              = azurerm_postgresql_flexible_server.this.fqdn
+    POSTGRES_DB                = "postgres"
+    ENTRA_TENANT_ID            = data.azuread_client_config.current.tenant_id
+    ENTRA_BACKEND_CLIENT_ID    = azuread_application.backend.client_id
+  }
 }
 
 resource "azurerm_resource_group" "this" {
