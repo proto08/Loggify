@@ -5,11 +5,12 @@
 | 項目 | 方針 |
 |---|---|
 | 主キー | UUID v7（時系列でソートできる）。アプリ側で生成する |
+| ORM | SQLAlchemy 2.x（async）+ asyncpg |
 | Discord ID | `bigint`（snowflake）。API では文字列で返す |
 | 削除 | 組織・サーバー・システムユーザーは論理削除（`deleted_at`）。招待・セッション・Passkey・ASN ルールは物理削除。認証ログは物理削除（個人データの削除要求・保存期間の満了時） |
-| マルチテナント分離 | テナントに属するテーブルには `org_id` を持たせ、repository 層で必ず `WHERE org_id = ?` を付ける（GORM Scope `ScopeOrg(orgID)`）。RLS は採用しない |
+| マルチテナント分離 | テナントに属するテーブルには `org_id` を持たせ、repository 層で必ず `WHERE org_id = :org_id` を付ける（repository の関数は `org_id` を必須引数にする）。RLS は採用しない |
 | 秘密値 | `*_enc`（`bytea`）に AES-256-GCM で暗号化して保存する（§4） |
-| マイグレーション | golang-migrate（`backend/migrations/*.up.sql` / `*.down.sql`）。GORM の AutoMigrate は使わない |
+| マイグレーション | Alembic（`backend/migrations/`）。autogenerate の結果は必ず目で確認してからコミットする |
 | タイムスタンプ | `timestamptz`、UTC |
 
 ## 2. ER 図
@@ -65,18 +66,19 @@ asn_default （システム共通）
 
 ### auth_sessions
 
-refresh トークンの管理用。1 レコード = 1 ログインセッション（端末）。
+システムユーザーのログインセッション。1 レコード = 1 端末（05 §4）。
 
 | カラム | 型 | 制約 | 説明 |
 |---|---|---|---|
-| id | uuid | PK | JWT の `sid` |
+| id | uuid | PK | |
 | system_user_id | uuid | FK, NOT NULL | |
-| refresh_token_hash | bytea | NOT NULL, UNIQUE | SHA-256。ローテーションのたびに更新 |
-| previous_token_hash | bytea | | 直前のトークン。再利用の検知に使う |
-| expires_at | timestamptz | NOT NULL | 絶対的な有効期限（30 日） |
+| token_hash | bytea | NOT NULL, UNIQUE | セッショントークンの SHA-256 |
+| auth_method | text | CHECK IN ('discord','passkey') | |
+| expires_at | timestamptz | NOT NULL | 絶対的な有効期限（作成から 30 日） |
+| last_used_at | timestamptz | NOT NULL | スライディング期限（7 日）の判定に使う |
 | revoked_at | timestamptz | | |
 | user_agent | text | | セッション一覧の表示用 |
-| created_at / last_used_at | timestamptz | | |
+| created_at | timestamptz | | |
 
 ### organizations
 
@@ -177,11 +179,12 @@ refresh トークンの管理用。1 レコード = 1 ログインセッショ�
 
 ### verification_sessions
 
-Discord コールバックから認証完了までの一時的な状態。Cookie `lgf_vs` にはこの `id` を HMAC で署名した値を入れる。
+Discord コールバックから認証完了までの一時的な状態。Next.js が Cookie `__Host-lgf_vs` に保存する `verification_token`（32 バイトの乱数）のハッシュで引く。
 
 | カラム | 型 | 制約 | 説明 |
 |---|---|---|---|
 | id | uuid | PK | |
+| token_hash | bytea | NOT NULL, UNIQUE | `verification_token` の SHA-256 |
 | server_id | uuid | FK, NOT NULL | |
 | oauth_state | bytea | NOT NULL | start 時に生成 |
 | consent_version | text | NOT NULL | 同意した文面のバージョン |
@@ -256,7 +259,7 @@ Discord コールバックから認証完了までの一時的な状態。Cookie
 
 ## 5. 定期バッチ
 
-Go API プロセス内のスケジューラで実行する。複数レプリカで重複実行しないよう、`pg_try_advisory_lock` で排他する。
+API プロセスとは別に `python -m app.jobs <job名>` として起動する（実行基盤はインフラ設計。Container Apps Jobs を想定）。念のため `pg_try_advisory_lock` で重複実行を防ぐ。
 
 | ジョブ | 頻度 | 内容 |
 |---|---|---|

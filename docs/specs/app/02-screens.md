@@ -7,7 +7,7 @@
 | パス | 画面 | 主な API |
 |---|---|---|
 | `/` | LP | — |
-| `/login` | ログイン（Discord / Passkey） | `GET /v1/auth/discord/login`, `POST /v1/auth/passkey/login/*` |
+| `/login` | ログイン（Discord / Passkey） | `/api/auth/discord/login`（Route Handler）、`POST /v1/auth/passkey/login/*` |
 | `/invite/[token]` | 招待の受諾（未ログインなら `/login?next=` へ） | `GET /v1/invites/{token}`, `POST /v1/invites/{token}/accept` |
 | `/legal/privacy`, `/legal/terms` | プライバシーポリシー・利用規約 | — |
 
@@ -16,7 +16,7 @@
 | パス | 画面 | 主な API |
 |---|---|---|
 | `/v/[serverId]` | 認証開始・同意 | `GET /v1/public/servers/{id}` |
-| `/verify/[serverId]` | データ収集 + Turnstile | `GET /v1/verify/{id}/session`, `POST /v1/verify/{id}/complete` |
+| `/verify/[serverId]` | データ収集 + Turnstile | `GET /v1/verify/{id}/session`、`POST /v1/verify/{id}/complete`（Server Action） |
 | `/result/[serverId]/[status]` | 結果 | `GET /v1/public/servers/{id}` |
 
 `status` の値:
@@ -74,23 +74,23 @@ Discord サーバーに貼られた開始 URL
 /v/[serverId] ── サーバーが無効 ──────────────────────────▶ /result/[serverId]/unavailable
   │ 収集データの説明を読み「同意して続ける」
   ▼
-api /v1/verify/{id}/start ─(302)─▶ Discord 認可画面
+/api/verify/[serverId]/start ─(302)─▶ Discord 認可画面
                                        │ 許可
                                        ▼
-api /v1/verify/{id}/callback ── state 不一致・交換失敗 ──▶ /result/[serverId]/error
+/api/verify/[serverId]/callback ── state 不一致・交換失敗 ──▶ /result/[serverId]/error
   │ (302)
   ▼
 /verify/[serverId] ── セッションの期限切れ ───────────────▶ /result/[serverId]/expired
   │ GPS 許可ダイアログ（設定が optional/required のとき）
   │ Turnstile
   ▼
-POST api /v1/verify/{id}/complete ─▶ { status } ─────────▶ /result/[serverId]/[status]
+Server Action → FastAPI complete ─▶ { status } ────────▶ /result/[serverId]/[status]
 ```
 
 ### 2.2 システムユーザー
 
 ```
-/login ─▶ Discord ─▶ api callback ─▶ /dashboard ─┬─ 組織 0 ─▶ /orgs/new ─▶ /orgs/[orgId]
+/login ─▶ Discord ─▶ /api/auth/discord/callback ─▶ /dashboard ─┬─ 組織 0 ─▶ /orgs/new ─▶ /orgs/[orgId]
                                                  ├─ 組織 1 ─▶ /orgs/[orgId]
                                                  └─ 組織 2+ ─▶ 組織選択
 
@@ -115,6 +115,7 @@ Step 5: 完了 — 開始 URL `https://loggify.com/v/{serverId}` を表示
 ## 3. UI 方針
 
 - 既存方針を引き継ぎ、Tailwind CSS v4 + shadcn/ui、ダークテーマ固定
-- データ取得: Server Components から API を呼ぶ（Cookie を転送する）。更新系はクライアントから `fetch(..., { credentials: "include" })` で呼ぶ
+- 表の「主な API」は FastAPI のエンドポイント。ブラウザから直接は呼ばず、Next.js のサーバー側（Server Components / Server Actions / Route Handlers）から呼ぶ（05 §2.4）
+- 更新系は Server Actions で実装する。クライアントコンポーネントから `fetch` で FastAPI を呼ぶことはない
 - フォームのバリデーションは zod で定義し、最終判定は API 側で行う
 - 秘密値（Client Secret・Bot Token・Webhook URL）は画面に再表示しない。更新時のみ入力させる
