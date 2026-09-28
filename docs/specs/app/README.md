@@ -9,32 +9,40 @@
 |---|---|---|
 | 01 | [01-overview.md](./01-overview.md) | スコープ・アクター・機能一覧・MVP 範囲・システム構成 |
 | 02 | [02-screens.md](./02-screens.md) | 画面一覧・画面遷移 |
-| 03 | [03-api.md](./03-api.md) | REST API 仕様（frontend ↔ backend） |
-| 04 | [04-data-model.md](./04-data-model.md) | データモデル（PostgreSQL） |
-| 05 | [05-auth-session.md](./05-auth-session.md) | BFF とサービス認証・システムユーザー認証・セッション・RBAC・エンドユーザー認証フロー |
+| 03 | [03-api.md](./03-api.md) | REST API 仕様（FastAPI が持つ API。Better Auth 側の API は 05 参照） |
+| 04 | [04-data-model.md](./04-data-model.md) | データモデル（PostgreSQL、`auth` / `app` スキーマ） |
+| 05 | [05-auth-session.md](./05-auth-session.md) | BFF 構成・Better Auth・JWT 連携・RBAC・エンドユーザー認証フロー |
 | 06 | [06-privacy.md](./06-privacy.md) | 個人データの同意・保存期間・アクセス権 |
 
 ## 設計上の前提
 
-- **BFF 構成**: ブラウザは Next.js（`loggify.com`）とだけ通信する。FastAPI は Next.js のサーバー側からのみ呼ばれ、インターネットに公開しない
-- フロントエンド / BFF: Next.js（App Router）。画面・Cookie 管理・FastAPI 呼び出しを担当し、業務ロジックと外部サービスのシークレットは持たない
-- バックエンド: FastAPI（Python）+ SQLAlchemy 2.x + Alembic
-- DB: PostgreSQL
+- **BFF 構成**: ブラウザは Next.js（`loggify.com`）とだけ通信する。FastAPI は Next.js のサーバー側からのみ呼ばれ、インターネットに公開しない（Azure Container Apps、内部 ingress）
+- フロントエンド / BFF: Next.js（App Router）+ **Better Auth**。システムユーザーの認証・セッション・組織/メンバー/招待の基盤データを持つ
+- バックエンド: FastAPI（Python）+ SQLAlchemy 2.x + Alembic。サーバー・認証ログ・ASN ルールなど、アプリ固有の業務データを持つ
+- DB: PostgreSQL 1 台。**`auth` スキーマ**（Better Auth 所有、Better Auth 自身のツールでマイグレーション）と **`app` スキーマ**（FastAPI 所有、Alembic でマイグレーション）に分離。物理外部キーでは繋がない（04 参照）
+- FastAPI と `auth` スキーマの橋渡しは **Better Auth の JWT プラグイン + JWKS**。FastAPI は `auth` スキーマを直接読まない
+- ログイン方法: Discord OAuth2 + Microsoft(Entra ID) OAuth2。Passkey はログイン後の追加登録のみ（Passkey 単体でのログイン・新規登録は不可）
+- デプロイ先: Azure Container Apps（既存 `infra/` の構成を踏襲）
 - シークレット（DB 接続情報・暗号鍵など）は Key Vault 等から環境変数で注入（詳細はインフラ設計）
 
 ## ドラフトから変更・具体化した点
 
 | 項目 | ドラフト | 本設計 | 理由 |
 |---|---|---|---|
+| バックエンド言語 | 未定（Go の雛形あり） | FastAPI（Python） | ユーザー指定 |
 | 認証開始 URL | Discord の authorize URL を直接貼る | Loggify の開始 URL `https://loggify.com/v/{server_id}` を貼る | OAuth `state` による CSRF 対策、Discord 遷移前の同意画面表示のため |
-| redirect_uri | `https://loggify.com/api/callback/{uuid}` | `https://loggify.com/api/verify/{server_id}/callback` | Next.js の Route Handler で受け、検証は FastAPI に任せる |
+| redirect_uri（エンドユーザー） | `https://loggify.com/api/callback/{uuid}` | `https://loggify.com/api/verify/{server_id}/callback` | Next.js の Route Handler で受け、検証は FastAPI に任せる |
 | VPN チェックの位置 | コールバック時 | 認証完了（`complete`）時 | 実際に認証を送信した IP で判定するため |
-| OAuth scope | `identify email` | `identify` のみ（email はサーバー設定で任意に ON） | データ最小化 |
+| OAuth scope（エンドユーザー） | `identify email` | `identify` のみ（email はサーバー設定で任意に ON） | データ最小化 |
 | ログの保存期間 | 永久保存 | 詳細な個人データは保存期間（既定 90 日）後に消去し、要約レコードのみ残す | 06-privacy.md 参照 |
 | サーバー削除時のログ | 紐付けを切って保持 | サーバーを論理削除し、30 日後にログを物理削除 | 孤立データを作らない。30 日は誤操作から復旧できる期間 |
-| システムユーザーのセッション | JWT（Access + Refresh） | サーバー側で管理する不透明トークン 1 本（Cookie は Next.js が保持） | BFF 構成ではブラウザが API を直接呼ばないため、JWT とリフレッシュの仕組みが不要 |
+| システムユーザーの認証基盤 | 自前の JWT + Refresh | **Better Auth**（Next.js 側、`auth` スキーマ）。FastAPI へは Better Auth の JWT プラグインで都度短命 JWT を発行して連携 | Discord・Microsoft・Passkey・組織/招待の実装を持つ既製品に乗る。JWT は非対称鍵署名で FastAPI に秘密を渡さずに検証できる |
+| ログイン方法 | Discord のみ | Discord + Microsoft(Entra ID) | ユーザー指定 |
+| 組織・メンバー・招待の実体 | 自前テーブル（`organizations`/`org_members`/`org_invites`） | 組織・メンバーは **Better Auth の organization プラグイン**（`auth` スキーマ）。招待だけは要件（誰でも踏める 1 回限り URL）が合わないため自前実装 | 05 §6 参照 |
+| マルチテナント分離 | アプリ層フィルタのみ | アプリ層フィルタ + **`app` スキーマに RLS** | アプリのバグによる他組織データの漏えいを DB 側でも防ぐ |
 | 通知先 | サーバー設定に Webhook URL を持つ | `notification_channels` テーブルに分離 | Telegram 追加時にスキーマ変更が不要 |
-| Discord ユーザートークン | 現行実装は refresh_token を Webhook に送信 | **保存も送信もしない**。ロール付与が済んだら破棄 | 第三者のアカウントを操作できるトークンのため |
+| Discord ユーザートークン（エンドユーザー） | 現行実装は refresh_token を Webhook に送信 | **保存も送信もしない**。ロール付与が済んだら破棄 | 第三者のアカウントを操作できるトークンのため |
+| Next.js → FastAPI の認証確認 | （未検討） | Better Auth の **JWT + JWKS**。リクエストごとに `org_id`・`role` を含めて都度発行（有効期限 30 秒） | 共有シークレットの配布・ローテーションが不要。複数組織所属でも情報が古くならない |
 
 ## 決定待ち事項
 
@@ -50,8 +58,10 @@
 | D6 | 同一 Guild ID の重複登録 | 有効なサーバー間で一意（別組織からの二重登録は不可） | 04 |
 | D7 | システム管理者によるログ閲覧 | 閲覧可能だが、すべて監査ログに記録 | 05, 06 |
 | D8 | 通知（Webhook）に載せる内容 | 要約とダッシュボードへのリンクのみ。IP・GPS・住所は載せない（現行実装から変更） | 05, 06 |
-| D9 | admin が発行できる招待のロール | viewer のみ（admin の招待は owner だけ。ドラフトでは admin も admin を招待できた） | 05 |
-| D10 | Next.js → FastAPI のサービス認証 | Entra ID のクライアント資格情報（Managed Identity + app role）。代替は共有シークレット | 05 |
+| D9 | admin が発行できる招待のロール | viewer のみ（admin の招待は owner だけ） | 05 |
+| D11 | `app` スキーマの RLS 導入 | 導入する（`org_id` ベース、sysadmin は `BYPASSRLS` ロールで迂回） | 04, 05 |
+| D12 | 招待の受諾方式 | Better Auth 標準（メール一致必須）は使わず、自前実装（トークン URL・誰でも踏める・1 回限り） | 05 |
+| D13 | JWT ペイロードの中身 | `sub`（system_user_id）・`org_id`・`role`。`requireOrgMember` の結果をそのまま都度詰める | 05 |
 
 ## docs/todo.md との対応
 

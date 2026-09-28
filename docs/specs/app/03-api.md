@@ -1,7 +1,8 @@
-# 03. API 仕様
+# 03. API 仕様（FastAPI）
 
-本章は **FastAPI の内部 API**（Next.js のサーバー側だけが呼ぶ）を定義する。ブラウザから見える Next.js 側のルートは §5 にまとめる。
-Next.js と FastAPI の間の認証・転送ヘッダーは 05 §2 を参照。
+本章は **FastAPI が持つ API**（`app` スキーマのデータを扱うもの）だけを定義する。
+システムユーザーの認証・セッション・組織・メンバー・招待は **Better Auth（Next.js 側）が持つ**ため、ここには出てこない。招待だけ自前実装のため例外的に FastAPI 外（Next.js 側）に実装する（05 §6.3）。
+Next.js と FastAPI の間の認証（JWT + JWKS）は 05 §3 を参照。
 
 ## 1. 共通仕様
 
@@ -12,8 +13,7 @@ Next.js と FastAPI の間の認証・転送ヘッダーは 05 §2 を参照。
 | 形式 | JSON（`Content-Type: application/json`）、UTF-8 |
 | 命名 | JSON のキーは `snake_case`、ID は UUID 文字列。Discord の ID（snowflake）は **文字列** で返す（JS の数値精度対策） |
 | 日時 | RFC 3339（UTC）例: `2026-09-24T12:00:00Z` |
-| サービス認証 | `Authorization: Bearer <サービストークン>`（全エンドポイント。`/health` を除く） |
-| ユーザー認証 | `X-Session-Token`（ダッシュボード系）、`X-Verification-Token`（認証フロー系） |
+| 認証 | `Authorization: Bearer <JWT>`（Better Auth が発行。05 §3）。エンドユーザー向けは `X-Verification-Token` |
 | スキーマ | Pydantic v2 のモデルで定義する。FastAPI が出力する OpenAPI から、Next.js 用の TypeScript 型を生成する（`openapi-typescript`） |
 | OpenAPI の公開 | `/docs`・`/openapi.json` は開発環境のみ有効 |
 
@@ -32,8 +32,8 @@ Next.js と FastAPI の間の認証・転送ヘッダーは 05 §2 を参照。
 | HTTP | code | 用途 |
 |---|---|---|
 | 400 | `bad_request` | 形式の誤り |
-| 401 | `unauthenticated` / `service_unauthenticated` | セッションが無効（Next.js はログイン画面へ） / サービストークンが無効 |
-| 403 | `forbidden` | 権限不足（組織に所属しているがロールが足りない場合は 404 を使う。403 は sysadmin 専用 API など） |
+| 401 | `unauthenticated` | JWT が無効・期限切れ（Next.js は `requireOrgMember` からやり直す） |
+| 403 | `forbidden` | sysadmin 専用 API など |
 | 404 | `not_found` | 存在しない、または**権限のない組織のリソース**（存在を秘匿する） |
 | 409 | `conflict` / `limit_exceeded` | 一意制約違反・上限超過 |
 | 422 | `validation_failed` / `discord_check_failed` など | 入力値の誤り（FastAPI 標準の 422 を上記の形式に変換する）・外部サービスでの検証失敗 |
@@ -47,65 +47,21 @@ Next.js と FastAPI の間の認証・転送ヘッダーは 05 §2 を参照。
 
 ### 1.3 認可の表記
 
-以下の表の「権限」列の意味:
-
-- `public`: サービス認証のみ（ユーザー認証は不要）
-- `login`: `X-Session-Token` が有効
-- `viewer` / `admin` / `owner`: 対象組織でそのロール以上
-- `sysadmin`: システム管理者
+- `public`: JWT 不要（`X-Verification-Token` または無認証）
+- `viewer` / `admin` / `owner`: JWT の `role` クレームがそのロール以上
+- `sysadmin`: JWT の `sub` が `app.sysadmins` に含まれる
 
 ## 2. エンドポイント一覧
 
-### 2.1 システムユーザー認証 `/auth`
+### 2.1 組織(集計) `/orgs`
+
+組織そのものの CRUD・メンバー・招待は Better Auth が持つ（05 参照）。ここにあるのは FastAPI 側データの集計のみ。
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
-| POST | `/auth/discord/authorize` | public | `{ next }` → `{ authorize_url, state_cookie }` |
-| POST | `/auth/discord/callback` | public | `{ code, state, state_cookie }` → `{ session_token, expires_at, next }` |
-| POST | `/auth/passkey/login/begin` | public | → `{ options, challenge_token }` |
-| POST | `/auth/passkey/login/finish` | public | `{ credential, challenge_token }` → `{ session_token, expires_at }` |
-| POST | `/auth/logout` | login | 現在のセッションを失効させる |
+| GET | `/orgs/{org_id}/stats?from=&to=` | viewer | 概要画面用の集計（認証数推移・成功率・ブロック数など、`verification_logs` の集計） |
 
-### 2.2 アカウント `/me`
-
-| メソッド | パス | 権限 | 説明 |
-|---|---|---|---|
-| GET | `/me` | login | プロフィール・所属組織とロールの一覧 |
-| DELETE | `/me` | login | アカウント削除（所有する組織がある場合は 409。先に移譲または削除が必要） |
-| GET | `/me/sessions` | login | ログイン中のセッション一覧 |
-| DELETE | `/me/sessions/{session_id}` | login | 個別ログアウト |
-| DELETE | `/me/sessions` | login | 全端末ログアウト |
-| POST | `/me/passkeys/register/begin` | login | Passkey 登録を開始（ログインから 10 分以内であること） |
-| POST | `/me/passkeys/register/finish` | login | Passkey 登録を完了 |
-| GET | `/me/passkeys` | login | 登録済み Passkey の一覧 |
-| PATCH / DELETE | `/me/passkeys/{id}` | login | 名前の変更・削除 |
-
-### 2.3 組織 `/orgs`
-
-| メソッド | パス | 権限 | 説明 |
-|---|---|---|---|
-| GET | `/orgs` | login | 所属組織の一覧 |
-| POST | `/orgs` | login | 作成（所有数の上限を超えると 409 `limit_exceeded`） |
-| GET | `/orgs/{org_id}` | viewer | 詳細 |
-| PATCH | `/orgs/{org_id}` | admin | 名前の変更 |
-| DELETE | `/orgs/{org_id}` | owner | 削除（本文に組織名を入れて確認。配下のサーバーは論理削除） |
-| GET | `/orgs/{org_id}/stats?from=&to=` | viewer | 概要画面用の集計 |
-| POST | `/orgs/{org_id}/transfer-ownership` | owner | `{ "system_user_id" }` へ移譲。元の owner は admin になる |
-
-### 2.4 メンバー・招待
-
-| メソッド | パス | 権限 | 説明 |
-|---|---|---|---|
-| GET | `/orgs/{org_id}/members` | viewer | メンバー一覧 |
-| PATCH | `/orgs/{org_id}/members/{user_id}` | admin | ロールの変更（05 の RBAC 制約に従う） |
-| DELETE | `/orgs/{org_id}/members/{user_id}` | admin（本人なら viewer） | 除外・脱退（owner は不可） |
-| GET | `/orgs/{org_id}/invites` | admin | 未使用かつ有効な招待の一覧 |
-| POST | `/orgs/{org_id}/invites` | admin | `{ "role": "admin" \| "viewer", "expires_in": "1h" \| "24h" \| "7d" }` → `{ "url" }`（トークンはこのレスポンスでのみ返す） |
-| DELETE | `/orgs/{org_id}/invites/{invite_id}` | admin | 取り消し |
-| GET | `/invites/{token}` | public | 組織名・ロール・有効期限（無効なら 404） |
-| POST | `/invites/{token}/accept` | login | 受諾（既に所属していれば 409） |
-
-### 2.5 サーバー
+### 2.2 サーバー
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
@@ -122,18 +78,18 @@ Next.js と FastAPI の間の認証・転送ヘッダーは 05 §2 を参照。
 | PATCH / DELETE | `/servers/{server_id}/notification-channels/{id}` | admin | 有効/無効の切り替え・削除 |
 | POST | `/servers/{server_id}/notification-channels/{id}/test` | admin | テスト送信 |
 
-### 2.6 ASN ルール
+### 2.3 ASN ルール
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
-| GET | `/asn/default` | login | デフォルトリスト（ASN・名前） |
+| GET | `/asn/default` | viewer | デフォルトリスト（ASN・名前） |
 | GET | `/orgs/{org_id}/asn-rules` | viewer | 組織ルール |
 | PUT | `/orgs/{org_id}/asn-rules` | admin | 一括置換 `{ rules: [{ asn, action: "allow"\|"block", note }] }` |
 | GET | `/servers/{server_id}/asn-rules` | viewer | サーバールール |
 | PUT | `/servers/{server_id}/asn-rules` | admin | 一括置換 |
 | GET | `/servers/{server_id}/asn-rules/effective?asn=` | viewer | 実効判定のプレビュー（どのレイヤーで決まったかを返す） |
 
-### 2.7 認証ログ
+### 2.4 認証ログ
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
@@ -163,7 +119,9 @@ Next.js と FastAPI の間の認証・転送ヘッダーは 05 §2 を参照。
 詳細 API（`GET /logs/{log_id}`）はこれに加えて `isp, region, latitude, longitude, geo_address, screen, user_agent, fingerprint_hash, email, consent_version, notify_status` を返す。
 保存期間を過ぎたログは `pii_purged: true` になり、これらのフィールドは `null` になる。
 
-### 2.8 認証フロー（エンドユーザー向け）
+監査ログ(`GET /orgs/{org_id}/audit-logs`)の1件分は、`actor_id`（system_user_id、UUID）に加え、**書き込み時に非正規化した** `actor_username` を含む（当時の表示名。後から本人が改名しても変わらない。理由は 04 §3 参照）。
+
+### 2.5 認証フロー（エンドユーザー向け）
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
@@ -186,23 +144,23 @@ Next.js と FastAPI の間の認証・転送ヘッダーは 05 §2 を参照。
 
 - `location` は GPS を収集しない場合、または拒否された場合は `null`
 - レスポンスは常に `200 { "status": "success" | "vpn" | "captcha" | "declined" | "expired" | "unavailable" | "rate_limited" | "error" }`。フロントはこれを `/result/{server_id}/{status}` に使う
-- 処理の順序と失敗時の扱いは 05 §5 を参照
+- 処理の順序と失敗時の扱いは 05 §10 を参照
 
-### 2.9 システム管理 `/admin`
+### 2.6 システム管理 `/admin`
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
 | PUT | `/admin/asn/default` | sysadmin | デフォルトリストの一括置換 |
-| GET | `/admin/orgs` | sysadmin | 全組織の一覧 |
+| GET | `/admin/orgs` | sysadmin | 全組織の一覧（`app` スキーマ内の `servers`・`verification_logs` から集計。組織名の表示は Next.js 側で Better Auth に問い合わせて補う） |
 | POST | `/admin/servers/{id}/suspend` | sysadmin | 強制停止 |
 | GET | `/admin/orgs/{org_id}/logs` | sysadmin | 閲覧（監査ログに `sysadmin.logs.read` を記録） |
 
-### 2.10 その他
+### 2.7 その他
 
 | メソッド | パス | 説明 |
 |---|---|---|
-| GET | `/health` | 死活監視用（ルート直下、`/v1` なし。既存実装どおり） |
-| GET | `/ready` | DB に接続できるかを確認 |
+| GET | `/health` | 死活監視用（ルート直下、`/v1` なし。認証不要） |
+| GET | `/ready` | DB に接続できるかを確認（認証不要） |
 
 ## 3. レート制限
 
@@ -213,42 +171,54 @@ MVP はプロセス内メモリ（トークンバケット）で実装する。�
 | `/verify/*/start` | IP | 10 回 / 10 分 |
 | `/verify/*/complete` | IP | 10 回 / 10 分 |
 | `/verify/*/complete` | server_id + Discord ID | 5 回 / 10 分 |
-| `/auth/*` | IP | 30 回 / 10 分 |
-| ログイン済み API | system_user_id | 300 回 / 分 |
+| ログイン済み API | system_user_id（JWT の `sub`） | 300 回 / 分 |
 
 ## 4. クライアント IP
 
-FastAPI は `X-Client-IP` ヘッダーの値だけを使う（Next.js が設定する。05 §2.3）。レート制限・Turnstile の `remoteip`・ipinfo の照会・ログの `ip` はすべてこの値を使う。
+FastAPI は `X-Client-IP` ヘッダーの値だけを使う（Next.js が設定する。05 §8）。レート制限・Turnstile の `remoteip`・ipinfo の照会・ログの `ip` はすべてこの値を使う。
 
 ## 5. Next.js 側のルート（ブラウザから見える入口）
 
 画面（ページ）は 02 を参照。ここでは画面以外の入口をまとめる。
 
-### 5.1 Route Handlers
+### 5.1 Better Auth 自身のルート
+
+Better Auth が `app/api/auth/[...all]/route.ts` で自動的にマウントする。個別の実装は不要。
+
+| パス | 役割 |
+|---|---|
+| `/api/auth/sign-in/social`（Discord/Microsoft） | OAuth 開始 |
+| `/api/auth/callback/discord`, `/api/auth/callback/microsoft` | OAuth コールバック |
+| `/api/auth/sign-in/passkey`, `/api/auth/passkey/add-passkey` | Passkey ログイン・登録 |
+| `/api/auth/sign-out` | ログアウト |
+| `/api/auth/token` | FastAPI 向け JWT の発行 |
+| `/api/auth/jwks` | FastAPI が検証に使う公開鍵 |
+
+### 5.2 このアプリ独自の Route Handlers
 
 | メソッド | パス | 呼ぶ FastAPI | 役割 |
 |---|---|---|---|
-| GET | `/api/auth/discord/login?next=` | `POST /v1/auth/discord/authorize` | `__Host-lgf_oauth` を設定し、Discord へ 302 |
-| GET | `/api/auth/discord/callback` | `POST /v1/auth/discord/callback` | `__Host-lgf_session` を設定し、`next` へ 302 |
-| POST | `/api/auth/logout` | `POST /v1/auth/logout` | Cookie を削除し、`/` へ 302 |
 | GET | `/api/verify/[serverId]/start?consent=` | `POST /v1/verify/{id}/start` | `__Host-lgf_vs` を設定し、Discord へ 302 |
 | GET | `/api/verify/[serverId]/callback` | `POST /v1/verify/{id}/callback` | `/verify/[serverId]` または `/result/...` へ 302 |
+| GET / POST | `/invite/[token]`（招待の受諾。05 §6.3） | なし（`auth` スキーマへ直接アクセス） | ログイン確認 → 招待の検証 → `auth.member` へ INSERT |
 
 Discord に登録する redirect_uri:
 
 | 用途 | redirect_uri | 登録先 |
 |---|---|---|
-| システムユーザーのログイン | `https://loggify.com/api/auth/discord/callback` | Loggify の OAuth アプリ |
+| システムユーザーのログイン | `https://loggify.com/api/auth/callback/discord` | Loggify の OAuth アプリ（Better Auth 標準） |
 | エンドユーザーの認証 | `https://loggify.com/api/verify/{server_id}/callback` | 各サーバー運営者の OAuth アプリ |
 
-### 5.2 Server Actions
+### 5.3 Server Actions
 
-更新系の操作はすべて Server Actions で実装し、`lib/actions/` に置く。FastAPI の更新系エンドポイントと 1 対 1 で対応させる（例: `updateServerSettings(serverId, input)` → `PATCH /v1/servers/{id}`）。
+更新系の操作はすべて Server Actions で実装し、`lib/actions/` に置く。FastAPI の更新系エンドポイントと 1 対 1 で対応させる（例: `updateServerSettings(serverId, input)` → `PATCH /v1/servers/{id}`）。組織・メンバー関連の Server Actions は Better Auth の `auth.api.*` を呼ぶ（例: `updateOrgName` → `auth.api.updateOrganization`）。
 
-- Server Actions の中で入力を zod で検証し、FastAPI のエラー（`error.code` / `details`）をフォームに表示できる形で返す
-- Passkey のログイン・登録（begin / finish）と、認証フローの `complete` も Server Actions で行う
+- すべて `createOrgAction`（05 §5.2）経由で実装し、`OrgContext` を経由しない組織データアクセスを作れないようにする
+- 入力は zod で検証し、FastAPI / Better Auth のエラーをフォームに表示できる形で返す
+- Passkey 登録・ログインは Better Auth のクライアント SDK（`authClient.passkey.*`）を Server Action からラップする
+- 認証フローの `complete` も Server Action で行う
 
-### 5.3 FastAPI クライアント（Next.js）
+### 5.4 FastAPI クライアント（Next.js）
 
-- `lib/api/client.ts`（`import "server-only"`）に集約する。サービストークンの取得・転送ヘッダーの付与・エラーの変換を 1 か所で行う
+- `lib/api/client.ts`（`import "server-only"`）に集約する。JWT の発行（`auth.api.getToken`）・付与・エラーの変換を 1 か所で行う
 - 型は FastAPI の OpenAPI から生成した `lib/api/schema.d.ts` を使う

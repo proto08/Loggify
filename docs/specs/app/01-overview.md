@@ -11,7 +11,7 @@ Discord サーバーの参加者を認証（CAPTCHA・VPN 判定・ロール付�
 | エンドユーザー | Discord サーバーに参加し、認証フローを通る人 | なし（Discord ID で識別） |
 | システムユーザー | ダッシュボードを使ってサーバーを管理する人 | あり |
 | 組織ロール | システムユーザーが組織内で持つ権限: `owner` / `admin` / `viewer` | — |
-| システム管理者 | Loggify の運営者（`system_users.is_sysadmin = true`） | あり |
+| システム管理者 | Loggify の運営者（`app.sysadmins` に登録された `system_user_id`） | あり |
 
 ## 3. 用語
 
@@ -27,29 +27,30 @@ Discord サーバーの参加者を認証（CAPTCHA・VPN 判定・ロール付�
 
 ```
                  ┌─────────── loggify.com（公開） ───────────┐
-Browser ─Cookie─▶│ Next.js = BFF                               │
+Browser ─Cookie─▶│ Next.js = BFF + Better Auth                 │
                  │  Server Components / Server Actions /       │
                  │  Route Handlers（OAuth のリダイレクトのみ） │
                  └─────────────────────────────────────────────┘
-                        │ サービス認証 + X-Session-Token など
+                        │ Authorization: Bearer <JWT>（都度発行）
                         ▼
                  ┌──────── FastAPI（内部 ingress のみ） ───────┐      ┌── Discord API (OAuth2 / Bot)
                  │ routers → services → repositories           │─────▶├── Cloudflare Turnstile
                  └─────────────────────────────────────────────┘      ├── ipinfo.io
                         │                                              ├── gps-coordinates.net
                         ▼                                              └── Discord Webhook / Telegram
-                    PostgreSQL
+              PostgreSQL（auth スキーマ / app スキーマ）
 ```
 
 ### 4.1 役割分担
 
 | 層 | 持つもの | 持たないもの |
 |---|---|---|
-| Next.js（BFF） | 画面、Cookie の発行と削除、FastAPI 呼び出しの集約、入力の一次検証（zod） | 業務ロジック、DB 接続、外部サービスのシークレット（Discord・Turnstile のシークレットキーなど） |
-| FastAPI | 業務ロジック、認証の判定、認可、DB、外部サービスの呼び出し、定期ジョブ | Cookie（ヘッダーで受け取るだけ）、画面 |
+| Next.js（BFF + Better Auth） | 画面、システムユーザーの認証・セッション・組織/メンバー/招待の基盤データ（`auth` スキーマ）、FastAPI 呼び出しの集約、入力の一次検証（zod） | 業務ロジック（サーバー・ログ・ASN ルール等）、外部サービスのシークレット（Discord・Turnstile のシークレットキーなど） |
+| FastAPI | 業務ロジック、`app` スキーマ、外部サービスの呼び出し、定期ジョブ、JWT の検証（署名検証のみ、`auth` スキーマには触れない） | 画面、システムユーザーのアカウント情報そのもの |
 
 - ブラウザが通信するのは Next.js だけ。FastAPI はインターネットに公開しない
 - ブラウザで必要な公開値（Turnstile のサイトキー）は、FastAPI から取得して画面に埋め込む
+- Next.js と FastAPI の連携方式（Better Auth の JWT + JWKS）、認証データの分離理由は 05 を参照
 
 ### 4.2 FastAPI のディレクトリ構成
 
@@ -96,8 +97,8 @@ MVP の列: ◎ = MVP に含める、○ = MVP 直後に着手、— = 後回し
 
 | ID | 機能 | MVP |
 |---|---|---|
-| A-01 | Discord OAuth2 ログイン | ◎ |
-| A-02 | Passkey の登録とログイン | ○ |
+| A-01 | Discord / Microsoft(Entra ID) OAuth2 ログイン（Better Auth） | ◎ |
+| A-02 | Passkey の登録とログイン（追加登録のみ、単体ログイン不可） | ○ |
 | A-03 | セッション一覧・個別ログアウト・全端末ログアウト | ○ |
 | A-04 | アカウント削除 | ◎ |
 | O-01 | 組織の作成・編集・削除（作成は 1 人 1 つまで） | ◎ |

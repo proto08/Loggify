@@ -7,8 +7,8 @@
 | パス | 画面 | 主な API |
 |---|---|---|
 | `/` | LP | — |
-| `/login` | ログイン（Discord / Passkey） | `/api/auth/discord/login`（Route Handler）、`POST /v1/auth/passkey/login/*` |
-| `/invite/[token]` | 招待の受諾（未ログインなら `/login?next=` へ） | `GET /v1/invites/{token}`, `POST /v1/invites/{token}/accept` |
+| `/login` | ログイン（Discord / Microsoft / Passkey、conditional UI 対応） | Better Auth 標準ルート（`/api/auth/sign-in/social`, `/api/auth/sign-in/passkey`） |
+| `/invite/[token]` | 招待の受諾（未ログインなら `/login?next=` へ）。**自前実装**（05 §6.3） | `/invite/[token]` 自身の Route Handler が `auth` スキーマへ直接アクセス |
 | `/legal/privacy`, `/legal/terms` | プライバシーポリシー・利用規約 | — |
 
 ### 1.2 認証フロー画面（エンドユーザー向け）
@@ -90,7 +90,7 @@ Server Action → FastAPI complete ─▶ { status } ────────▶
 ### 2.2 システムユーザー
 
 ```
-/login ─▶ Discord ─▶ /api/auth/discord/callback ─▶ /dashboard ─┬─ 組織 0 ─▶ /orgs/new ─▶ /orgs/[orgId]
+/login ─▶ Discord or Microsoft ─▶ /api/auth/callback/{provider} ─▶ /dashboard ─┬─ 組織 0 ─▶ /orgs/new ─▶ /orgs/[orgId]
                                                  ├─ 組織 1 ─▶ /orgs/[orgId]
                                                  └─ 組織 2+ ─▶ 組織選択
 
