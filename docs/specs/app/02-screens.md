@@ -16,7 +16,7 @@
 | パス | 画面 | 主な API |
 |---|---|---|
 | `/v/[serverId]` | 認証開始・同意 | `GET /v1/public/servers/{id}` |
-| `/verify/[serverId]` | データ収集 + Turnstile | `GET /v1/verify/{id}/session`、`POST /v1/verify/{id}/complete`（Server Action） |
+| `/verify/[serverId]` | データ収集 + hCaptcha | `GET /v1/verify/{id}/session`、`POST /v1/verify/{id}/complete`（Server Action） |
 | `/result/[serverId]/[status]` | 結果 | `GET /v1/public/servers/{id}` |
 
 `status` の値:
@@ -25,7 +25,7 @@
 |---|---|---|
 | `success` | 認証成功・ロール付与済み | 完了しました。Discord に戻ってください |
 | `vpn` | VPN/プロキシとしてブロック | VPN を切ってやり直してください |
-| `captcha` | Turnstile 検証失敗 | もう一度お試しください |
+| `captcha` | hCaptcha 検証失敗 | もう一度お試しください |
 | `declined` | 同意なし、または必須の GPS が拒否された | 認証には同意が必要です |
 | `expired` | 認証セッションの期限切れ | 最初からやり直してください |
 | `unavailable` | サーバーが無効・削除済み・Bot 未参加 | サーバー管理者に連絡してください |
@@ -82,7 +82,7 @@ Discord サーバーに貼られた開始 URL
   ▼
 /verify/[serverId] ── セッションの期限切れ ───────────────▶ /result/[serverId]/expired
   │ GPS 許可ダイアログ（設定が optional/required のとき）
-  │ Turnstile
+  │ hCaptcha
   ▼
 Server Action → FastAPI complete ─▶ { status } ────────▶ /result/[serverId]/[status]
 ```

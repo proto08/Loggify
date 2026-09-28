@@ -184,20 +184,25 @@ async function requireOrgMember(orgId: string, minRole: Role): Promise<OrgContex
 
 ## 8. クライアント IP
 
-Azure Container Apps 前提で確定。
+Cloudflare（プロキシ有効・Under Attack Mode 常時 ON）を Azure Container Apps の前段に置く構成で確定。
 
-- Container Apps の ingress（Envoy）は、`X-Forwarded-For` の**一番右のみ自身が付与した値**であることを保証する（それより左はクライアントが自由に書ける値なので信頼しない）
+```
+Browser → Cloudflare（WAF / Under Attack Mode） → Azure Container Apps ingress → Next.js
+```
+
+- Cloudflare は `CF-Connecting-IP` ヘッダーに、Cloudflare 自身が観測した接続元 IP を設定する。これが最も信頼できる値
 - Better Auth の IP 検出機能（`advanced.ipAddress`）を使う:
   ```typescript
   advanced: {
     ipAddress: {
-      ipAddressHeaders: ["x-forwarded-for"],
-      trustedProxies: [process.env.CONTAINER_APPS_ENV_STATIC_IP], // azurerm_container_app_environment.static_ip_address
+      ipAddressHeaders: ["cf-connecting-ip"],
     }
   }
   ```
-- エンドユーザーの認証フロー向け `X-Client-IP`（FastAPI に渡す値）も、同じ「XFF の一番右を採用する」ルールで独自に抽出する共通関数を 1 つ作り、両方で使い回す
-- ブラウザが送ってきた `X-Client-IP` は Next.js で必ず上書き・破棄する
+- エンドユーザーの認証フロー向け `X-Client-IP`（FastAPI に渡す値）も `CF-Connecting-IP` から抽出する共通関数を 1 つ作り、両方で使い回す。hCaptcha の `remoteip`（§10.3）もこの値を使う
+- ブラウザが送ってきた `X-Client-IP` / `CF-Connecting-IP` は Next.js で必ず上書き・破棄する
+- Azure 側は Cloudflare の IP レンジ以外からのアクセスを拒否するのが望ましい（インフラ設計側で対応。NSG / Container Apps の IP 制限）
+- Cloudflare 自体の設定（DNS・TLS モード・WAF ルール）はインフラ設計（`docs/specs/infra/`）で扱う。Under Attack Mode は常時 ON（ダッシュボード・エンドユーザーの認証フロー双方でページ読み込み時に Cloudflare のチャレンジが挟まる。UX コストは許容する前提）
 
 ## 9. ASN ルールの評価
 
@@ -260,7 +265,7 @@ Next     成功 → 302 /verify/{server_id}、失敗 → 302 /result/{server_id}
 Server Action  POST /v1/verify/{server_id}/complete + X-Verification-Token   → FastAPI
 FastAPI  1. セッションが有効・未完了・discord_user あり、でなければ "expired"
          2. レート制限（IP、server_id + discord_id） → "rate_limited"
-         3. Turnstile を検証（remoteip = X-Client-IP） → 失敗なら "captcha"
+         3. hCaptcha を検証（remoteip = X-Client-IP） → 失敗なら "captcha"
          4. collect_gps = required かつ location = null → "declined"
          5. X-Client-IP → ipinfo（ASN・国・都市・ISP）。失敗したら ASN 不明として続ける
          6. ASN 評価 → block なら "vpn"
