@@ -73,7 +73,8 @@ DB アクセスの都合上、FastAPI 側は `py_webauthn` や自前の OAuth �
 | サービス | 用途 |
 |---|---|
 | Discord API | OAuth2 + Bot API（ロール付与） |
-| Cloudflare Turnstile | CAPTCHA |
+| hCaptcha | CAPTCHA（エンドユーザーの認証フロー） |
+| Cloudflare | WAF・Under Attack Mode 常時 ON（サイト全体の前段。CAPTCHA とは別レイヤー） |
 | ipinfo.io | IP ジオロケーション・ASN 取得 |
 | gps-coordinates.net | GPS 逆ジオコーディング |
 | Telegram Bot API | 通知（Post-MVP） |
