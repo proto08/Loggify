@@ -128,14 +128,14 @@ Next.js と FastAPI の間の認証（JWT + JWKS）は 05 §3 を参照。
 | GET | `/public/servers/{server_id}` | public | `{ name, icon_url, status, collect_gps, collect_email, retention_days, consent_version }`（`/v` と `/result` の表示用） |
 | POST | `/verify/{server_id}/start` | public | `{ consent_version }` → `{ authorize_url, verification_token, expires_at }`、または `{ status: "unavailable" \| "consent_outdated" \| "rate_limited" }` |
 | POST | `/verify/{server_id}/callback` | `X-Verification-Token` | `{ code, state }` → `{ ok: true }` |
-| GET | `/verify/{server_id}/session` | `X-Verification-Token` | `{ discord_user: { username, avatar_url }, collect_gps, turnstile_site_key, expires_at }` |
+| GET | `/verify/{server_id}/session` | `X-Verification-Token` | `{ discord_user: { username, avatar_url }, collect_gps, hcaptcha_site_key, expires_at }` |
 | POST | `/verify/{server_id}/complete` | `X-Verification-Token` | 下記 |
 
 `POST /verify/{server_id}/complete` のリクエスト:
 
 ```json
 {
-  "turnstile_token": "…",
+  "hcaptcha_token": "…",
   "location": { "latitude": 35.68, "longitude": 139.76, "accuracy": 30 },
   "screen": { "width": 1920, "height": 1080 },
   "fingerprint": { "visitor_id": "…", "canvas_hash": "…" }
@@ -175,7 +175,7 @@ MVP はプロセス内メモリ（トークンバケット）で実装する。�
 
 ## 4. クライアント IP
 
-FastAPI は `X-Client-IP` ヘッダーの値だけを使う（Next.js が設定する。05 §8）。レート制限・Turnstile の `remoteip`・ipinfo の照会・ログの `ip` はすべてこの値を使う。
+FastAPI は `X-Client-IP` ヘッダーの値だけを使う（Next.js が設定する。05 §8）。レート制限・hCaptcha の `remoteip`・ipinfo の照会・ログの `ip` はすべてこの値を使う。
 
 ## 5. Next.js 側のルート（ブラウザから見える入口）
 

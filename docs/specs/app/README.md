@@ -43,12 +43,15 @@
 | 通知先 | サーバー設定に Webhook URL を持つ | `notification_channels` テーブルに分離 | Telegram 追加時にスキーマ変更が不要 |
 | Discord ユーザートークン（エンドユーザー） | 現行実装は refresh_token を Webhook に送信 | **保存も送信もしない**。ロール付与が済んだら破棄 | 第三者のアカウントを操作できるトークンのため |
 | Next.js → FastAPI の認証確認 | （未検討） | Better Auth の **JWT + JWKS**。リクエストごとに `org_id`・`role` を含めて都度発行（有効期限 30 秒） | 共有シークレットの配布・ローテーションが不要。複数組織所属でも情報が古くならない |
+| CAPTCHA | Cloudflare Turnstile | **hCaptcha** | ユーザー指定 |
+| サイト前段の保護 | なし | **Cloudflare（プロキシ有効、WAF・Under Attack Mode 常時 ON）**を追加。クライアント IP は `CF-Connecting-IP` を使用 | ユーザー指定。DDoS/ボット対策をアプリ層(hCaptcha)とは別に、エッジ層でも行う |
 
 ## 決定待ち事項
 
 | # | 事項 | 状態 | 記載箇所 |
 |---|---|---|---|
 | D1 | 詳細個人データの保存期間の既定値と上限 | **対象外**（別途対応。本設計では扱わない） | — |
+| D14 | フィンガープリント収集コードの難読化 | **保留**。Cloudflare Bot Fight Mode / Super Bot Fight Mode は Under Attack Mode 常時 ON で足りると判断し不採用 | — |
 
 ## 確定事項（個人データ・運用まわり）
 

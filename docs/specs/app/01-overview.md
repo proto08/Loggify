@@ -34,7 +34,7 @@ Browser ─Cookie─▶│ Next.js = BFF + Better Auth                 │
                         │ Authorization: Bearer <JWT>（都度発行）
                         ▼
                  ┌──────── FastAPI（内部 ingress のみ） ───────┐      ┌── Discord API (OAuth2 / Bot)
-                 │ routers → services → repositories           │─────▶├── Cloudflare Turnstile
+                 │ routers → services → repositories           │─────▶├── hCaptcha
                  └─────────────────────────────────────────────┘      ├── ipinfo.io
                         │                                              ├── gps-coordinates.net
                         ▼                                              └── Discord Webhook / Telegram
@@ -45,11 +45,12 @@ Browser ─Cookie─▶│ Next.js = BFF + Better Auth                 │
 
 | 層 | 持つもの | 持たないもの |
 |---|---|---|
-| Next.js（BFF + Better Auth） | 画面、システムユーザーの認証・セッション・組織/メンバー/招待の基盤データ（`auth` スキーマ）、FastAPI 呼び出しの集約、入力の一次検証（zod） | 業務ロジック（サーバー・ログ・ASN ルール等）、外部サービスのシークレット（Discord・Turnstile のシークレットキーなど） |
+| Next.js（BFF + Better Auth） | 画面、システムユーザーの認証・セッション・組織/メンバー/招待の基盤データ（`auth` スキーマ）、FastAPI 呼び出しの集約、入力の一次検証（zod） | 業務ロジック（サーバー・ログ・ASN ルール等）、外部サービスのシークレット（Discord・hCaptcha のシークレットキーなど） |
 | FastAPI | 業務ロジック、`app` スキーマ、外部サービスの呼び出し、定期ジョブ、JWT の検証（署名検証のみ、`auth` スキーマには触れない） | 画面、システムユーザーのアカウント情報そのもの |
 
 - ブラウザが通信するのは Next.js だけ。FastAPI はインターネットに公開しない
-- ブラウザで必要な公開値（Turnstile のサイトキー）は、FastAPI から取得して画面に埋め込む
+- ブラウザで必要な公開値（hCaptcha のサイトキー）は、FastAPI から取得して画面に埋め込む
+- Cloudflare（WAF・Under Attack Mode 常時 ON）を Azure Container Apps の前段に置く。詳細は 05 §8
 - Next.js と FastAPI の連携方式（Better Auth の JWT + JWKS）、認証データの分離理由は 05 を参照
 
 ### 4.2 FastAPI のディレクトリ構成
@@ -65,7 +66,7 @@ backend/
     services/          # 業務ロジック
     repositories/      # DB アクセス（org_id を必須引数にする）
     models/            # SQLAlchemy のモデル
-    clients/           # 外部 API: discord, turnstile, ipinfo, geocode, notify
+    clients/           # 外部 API: discord, hcaptcha, ipinfo, geocode, notify
     jobs/              # 定期ジョブ（python -m app.jobs <name>）
   migrations/          # Alembic
   tests/
@@ -84,7 +85,7 @@ MVP の列: ◎ = MVP に含める、○ = MVP 直後に着手、— = 後回し
 |---|---|---|
 | V-01 | 認証開始ページ（サーバー名・収集データの説明・同意） | ◎ |
 | V-02 | Discord OAuth2 ログイン（サーバーごとの OAuth アプリ） | ◎ |
-| V-03 | Turnstile CAPTCHA | ◎ |
+| V-03 | hCaptcha CAPTCHA | ◎ |
 | V-04 | 画面サイズ・UA・フィンガープリントの収集 | ◎ |
 | V-05 | GPS 収集（サーバー設定に従う） | ◎ |
 | V-06 | VPN/プロキシ判定（ASN、3 レイヤールール） | ◎ |
