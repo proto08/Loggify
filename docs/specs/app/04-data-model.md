@@ -76,7 +76,7 @@ DB を直接更新して付与する（API からは変更不可）。
 | bot_token_enc | bytea | | |
 | role_id | bigint | | |
 | block_vpn | boolean | NOT NULL DEFAULT true | |
-| collect_gps | text | CHECK IN ('off','optional','required') DEFAULT 'off' | |
+| collect_gps | text | CHECK IN ('off','optional','required') DEFAULT 'optional' | D2 |
 | collect_email | boolean | NOT NULL DEFAULT false | true のとき scope に `email` を追加 |
 | retention_days | int | NOT NULL DEFAULT 90, CHECK 7〜365 | |
 | last_checked_at | timestamptz | | |
@@ -165,7 +165,10 @@ Discord コールバックから認証完了までの一時的な状態。Next.j
 | geo_address | text | ✓ | |
 | screen_width / screen_height | int | ✓ | |
 | user_agent | text | ✓ | |
-| fingerprint_hash | text | ✓ | `visitor_id` と `canvas_hash` を連結して SHA-256 したもの（D3） |
+| fingerprint_hash | text | ✓ | `visitor_id`・`canvas_hash`・audio・fonts・hardwareConcurrency 等を合成して SHA-256 したもの（D3） |
+| fingerprint_webgl_renderer | text | ✓ | 生の値（D3、複数アカウント検知の精度のため保存） |
+| fingerprint_webgl_vendor | text | ✓ | 生の値（D3） |
+| fingerprint_canvas_hash | text | ✓ | 生の値（FingerprintJS の canvas コンポーネントのハッシュそのもの。D3） |
 | consent_version | text NOT NULL | | |
 | notify_status | text | | `sent` / `failed` / `none` |
 | pii_purged_at | timestamptz | | 詳細個人データを消去した日時 |
