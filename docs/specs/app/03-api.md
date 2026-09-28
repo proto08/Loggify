@@ -60,13 +60,14 @@ Next.js と FastAPI の間の認証（JWT + JWKS）は 05 §3 を参照。
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
 | GET | `/orgs/{org_id}/stats?from=&to=` | viewer | 概要画面用の集計（認証数推移・成功率・ブロック数など、`verification_logs` の集計） |
+| POST | `/audit-logs` | login | `{ org_id?, action, target_type, target_id, metadata }` → `app.audit_logs` に INSERT。組織・メンバー・招待・オーナー移譲など `auth` スキーマ側で完結する操作を、Next.js が実行直後に記録するために使う（04 §3 参照）。`action` は許可リストと照合し、リストにない値は 400 |
 
 ### 2.2 サーバー
 
 | メソッド | パス | 権限 | 説明 |
 |---|---|---|---|
 | GET | `/orgs/{org_id}/servers` | viewer | 一覧 |
-| POST | `/orgs/{org_id}/servers` | admin | 下書きとして作成 `{ guild_id, name }` |
+| POST | `/orgs/{org_id}/servers` | admin | 下書きとして作成 `{ guild_id, name }`。組織あたりの登録数上限（01 §6、既定 5）を超える場合は 409 `limit_exceeded` |
 | GET | `/servers/{server_id}` | viewer | 詳細（秘密値は `has_client_secret: true` のように有無のみ返す） |
 | PATCH | `/servers/{server_id}` | admin | 名前・認証設定・Role ID |
 | PUT | `/servers/{server_id}/credentials` | admin | `{ client_id?, client_secret?, bot_token? }`（指定したものだけ更新） |
@@ -119,6 +120,8 @@ Next.js と FastAPI の間の認証（JWT + JWKS）は 05 §3 を参照。
 詳細 API（`GET /logs/{log_id}`）はこれに加えて `isp, region, latitude, longitude, geo_address, screen, user_agent, fingerprint_hash, email, consent_version, notify_status` を返す。
 保存期間を過ぎたログは `pii_purged: true` になり、これらのフィールドは `null` になる。
 
+生のフィンガープリント値（`fingerprint_webgl_renderer` / `fingerprint_webgl_vendor` / `fingerprint_canvas_hash`、04 参照）は**この API では返さない**。複数アカウントの名寄せ判定にのみ内部で使う想定で、ダッシュボードの画面には表示しない（一致した過去ログ件数などの集計値のみ、必要になれば別途検討する）。
+
 監査ログ(`GET /orgs/{org_id}/audit-logs`)の1件分は、`actor_id`（system_user_id、UUID）に加え、**書き込み時に非正規化した** `actor_username` を含む（当時の表示名。後から本人が改名しても変わらない。理由は 04 §3 参照）。
 
 ### 2.5 認証フロー（エンドユーザー向け）
@@ -138,9 +141,23 @@ Next.js と FastAPI の間の認証（JWT + JWKS）は 05 §3 を参照。
   "hcaptcha_token": "…",
   "location": { "latitude": 35.68, "longitude": 139.76, "accuracy": 30 },
   "screen": { "width": 1920, "height": 1080 },
-  "fingerprint": { "visitor_id": "…", "canvas_hash": "…" }
+  "fingerprint": {
+    "visitor_id": "…",
+    "webgl_renderer": "…",
+    "webgl_vendor": "…",
+    "canvas_hash": "…",
+    "audio_hash": "…",
+    "fonts_hash": "…",
+    "hardware_concurrency": 8,
+    "device_memory": 8,
+    "timezone": "Asia/Tokyo",
+    "screen_resolution": "1920x1080",
+    "color_depth": 24
+  }
 }
 ```
+
+`fingerprint` の各フィールドを FastAPI 側で連結し、`fingerprint_hash`（SHA-256）として保存する（D3）。`webgl_renderer` / `webgl_vendor` / `canvas_hash` はハッシュ化とは別に生の値でも保存する（04 参照）。それ以外（audio・fonts・timezone 等）は合成ハッシュの材料としてのみ使い、生の値は保存しない。
 
 - `location` は GPS を収集しない場合、または拒否された場合は `null`
 - レスポンスは常に `200 { "status": "success" | "vpn" | "captcha" | "declined" | "expired" | "unavailable" | "rate_limited" | "error" }`。フロントはこれを `/result/{server_id}/{status}` に使う

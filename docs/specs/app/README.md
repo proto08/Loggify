@@ -70,6 +70,23 @@ D1 を除き、以下はすべて確定済み。
 | D11 | `app` スキーマの RLS 導入 | 導入する（`org_id` ベース、sysadmin は `BYPASSRLS` ロールで迂回） | 04, 05 |
 | D12 | 招待の受諾方式 | Better Auth 標準（メール一致必須）は使わず、自前実装（トークン URL・誰でも踏める・1 回限り） | 05 |
 | D13 | JWT ペイロードの中身 | `sub`（system_user_id）・`org_id`・`role`。`requireOrgMember` の結果をそのまま都度詰める | 05 |
+| D15 | `notification_channels` への RLS 適用 | `org_id` を非正規化して追加し、RLS 対象に含める（`asn_rules` と同じ扱い） | 04 |
+| D16 | 組織・メンバー系操作の監査ログ | `POST /v1/audit-logs` を新設し、Next.js が `auth` スキーマ側の操作を記録する | 03, 04 |
+
+## レビューで見つけた修正（設計内の不整合）
+
+一通り書き上げた後にレビューを行い、以下を修正した。
+
+| 項目 | 内容 |
+|---|---|
+| フィンガープリントのAPI仕様 | `POST /verify/{id}/complete` のリクエスト例が D3 決定前のまま（`visitor_id`/`canvas_hash` のみ）だったため、audio・fonts・hardwareConcurrency 等の合成ハッシュ材料と、生データ 3 項目を送る形に修正 |
+| 生フィンガープリントの公開範囲 | ログ詳細 API では返さない（名寄せ判定にのみ内部で使う）ことを明記 |
+| IDOR 対策の明記漏れ | Better Auth 導入に伴う 05 の全面書き直しで欠落していた「repository は `org_id` と リソース ID を必ず両方で絞る」という原則を再掲 |
+| CSRF 対策の明記漏れ | 同じく書き直しで欠落していた CSRF 対策（Better Auth の `trustedOrigins` + Server Actions の Origin 検査）を再掲 |
+| Better Auth 自身のレート制限 | Discord/Microsoft OAuth・Passkey ログインへのレート制限が未記載だったため追加 |
+| `require_service` という紛らわしい命名 | 実体は JWT 署名検証であり「サービストークン」ではないため `verify_jwt` に変更 |
+| サーバー登録数の上限 | 機能一覧（01）にしか書かれておらず API 仕様に出てこなかったため、`POST /orgs/{org_id}/servers` に明記 |
+| オーナー移譲の実装方法 | 招待と同様「Better Auth 標準にない操作なので `auth.member` を直接更新する」ことを明記 |
 
 ## docs/todo.md との対応
 
