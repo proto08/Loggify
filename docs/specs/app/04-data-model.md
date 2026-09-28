@@ -38,7 +38,7 @@ app.sysadmins（system_user_id を列挙するだけ。auth.user への物理FK�
 
 app.servers
   │ 1:N ─ app.asn_rules (scope = server)
-  │ 1:N ─ app.notification_channels
+  │ 1:N ─ app.notification_channels（org_id も非正規化して保持）
   │ 1:N ─ app.verification_sessions
   └─1:N─ app.verification_logs
 
@@ -90,6 +90,7 @@ DB を直接更新して付与する（API からは変更不可）。
 | カラム | 型 | 制約 | 説明 |
 |---|---|---|---|
 | id | uuid | PK | |
+| org_id | uuid | NOT NULL | テナント分離・RLS のため非正規化して持たせる（`asn_rules` と同じ理由） |
 | server_id | uuid | FK → app.servers, NOT NULL | |
 | type | text | CHECK IN ('discord_webhook','telegram') | |
 | config_enc | bytea | NOT NULL | JSON を暗号化したもの（Webhook URL、Telegram の bot token と chat_id） |
@@ -200,11 +201,11 @@ Discord コールバックから認証完了までの一時的な状態。Next.j
 
 監査ログは 2 年保存し、アプリからは削除できないようにする。
 
-`org.*` 系（組織作成・メンバー変更・招待）の操作は `auth` スキーマ側で完結するため、この監査ログには**サーバー・ASN ルール・データ削除など `app` スキーマに対する操作のみ**が記録される。組織・メンバー系の監査ログが必要な場合は Better Auth 側に別途持たせるか、Next.js から `app.audit_logs` に書き込む（要検討）。
+`org.*` 系（組織作成・メンバー変更・招待・オーナー移譲）の操作は `auth` スキーマ側で完結するが、これらも `app.audit_logs` に記録する。ただし frontend 用の Postgres ロールは `auth` スキーマにしか GRANT を持たないため（05 §1）、Next.js が直接 `app.audit_logs` に書き込むことはしない。代わりに **FastAPI に `POST /v1/audit-logs` を追加**し、Next.js が組織・メンバー系の操作を行った直後にこれを呼んで記録する（03 §2.1 参照）。書き込み専用・ログイン済みなら誰でも呼べる（呼び出し元が Next.js だけであることは JWT 検証で保証される。`action` は許可リストと照合し、任意の値を書き込めないようにする）。
 
 ## 5. Row Level Security（`app` スキーマ、D11）
 
-`app` スキーマの `org_id` を持つテーブル（`servers`, `asn_rules`, `verification_logs`, `audit_logs`）に RLS を有効化する。`auth` スキーマには適用しない（05 §5.2 の理由により、コード規約側で防御する）。
+`app` スキーマの `org_id` を持つテーブル（`servers`, `asn_rules`, `notification_channels`, `verification_logs`, `audit_logs`）に RLS を有効化する。`auth` スキーマには適用しない（05 §5.2 の理由により、コード規約側で防御する）。
 
 ```sql
 ALTER TABLE app.verification_logs ENABLE ROW LEVEL SECURITY;

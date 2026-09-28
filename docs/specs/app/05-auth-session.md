@@ -13,6 +13,7 @@ Browser ──(Cookie)──▶ Next.js（loggify.com, BFF + Better Auth） ─�
 - ブラウザが通信するのは Next.js だけ。FastAPI はインターネットに公開しない（Azure Container Apps、内部 ingress）
 - **システムユーザーの認証・セッション・組織・メンバー・招待の基盤データは Better Auth（Next.js 側）が持つ**。物理的には Postgres の `auth` スキーマ
 - **FastAPI は `auth` スキーマを直接読み書きしない**。Next.js が Better Auth の JWT プラグインで発行した短命 JWT を検証するだけ（§3）
+- **CSRF 対策**: Better Auth は `trustedOrigins` に設定したオリジン以外からのリクエストを拒否する（Origin ヘッダー検査）。加えて、更新系はすべて Server Actions（03 §5.3）で実装するため、Next.js 自身の Origin 検査にも乗る（二重の対策）。単純なフォーム送信や `<img>` タグ等からの CSRF は、どちらの仕組みでも弾かれる
 - FastAPI 自身のデータ（サーバー・認証ログ・ASN ルール等）は `app` スキーマ。Alembic で管理する（04 参照）
 
 ## 2. なぜこの構成にしたか（経緯）
@@ -62,13 +63,14 @@ FastAPI の依存性注入（`Depends`）で実装する。DB には一切問い
 
 | 依存関数 | 役割 |
 |---|---|
-| `require_service` | `/health`・`/v1/public/*`・`/v1/verify/*` 以外の全エンドポイントに適用。JWKS で署名検証し、`exp`・`iss`・`aud` を確認。失敗なら 401 |
+| `verify_jwt` | `/health`・`/v1/public/*`・`/v1/verify/*` 以外の全エンドポイントに適用。JWKS で署名検証し、`exp`・`iss`・`aud` を確認。失敗なら 401 |
 | `current_user` | JWT の `sub` クレームを検証し、`system_user_id` を返す。`org_id`/`role` を要求しない |
 | `org_role(min_role)` | JWT の `org_id`・`role` クレームを検証し、`role` が `min_role` を満たさなければ **404**（IDOR 対策として、権限不足と非存在を区別しない） |
 | `require_sysadmin` | JWT の `sub` が `app.sysadmins` テーブル（FastAPI 自身のテーブル、§7）に含まれるか確認 |
 
 - `/v1/verify/*`（エンドユーザー向け）と `/v1/public/*` はこの JWT 検証を使わない。`X-Verification-Token`（FastAPI 自身が発行・管理する不透明トークン）か、無認証で内部ネットワークの隔離のみに依拠する（旧来設計のまま）
 - FastAPI が JWT 検証に成功したことは「Next.js を経由した正当なリクエストである」ことの証明も兼ねる。そのため、これとは別の「サービス間 Bearer トークン」は不要（旧設計で検討していたものは廃止）
+- **IDOR 対策**: `org_role(min_role)` は JWT の `role` クレームがロールを満たすかしか見ない。**`servers`/`asn_rules`/`notification_channels` 等、URL に `server_id` などのリソース ID を含むエンドポイントでは、repository 層のクエリに必ず `WHERE org_id = :org_id AND id = :resource_id` の両方を条件として含める**（`id` だけで取得する関数を作らない）。JWT の `org_id` と URL の `server_id` が指す組織が一致しない場合に別組織のリソースへアクセスできてしまう事故を防ぐため。`app` スキーマの RLS（04 §5）はこれが漏れた場合の保険であり、一次防御はアプリ層で行う
 
 ## 4. システムユーザーの認証（Better Auth）
 
@@ -86,7 +88,11 @@ FastAPI の依存性注入（`Depends`）で実装する。DB には一切問い
   - Microsoft: `https://loggify.com/api/auth/callback/microsoft`
 - `infra/entra.tf` の redirect_uri は現在 NextAuth の規約（`/api/auth/callback/azure-ad`）のままなので、上記に修正が必要（インフラ設計で対応）
 
-### 4.2 Passkey の UX
+### 4.2 レート制限
+
+Better Auth 自身の `rateLimit` 機能を有効化し、ログイン試行(Discord/Microsoft OAuthのコールバック処理・Passkeyのログイン)を IP 単位で制限する。FastAPI 側のレート制限(03 §3)とは別に設定が必要（Better Auth のルートは FastAPI を経由しないため）。初期値はエンドユーザー向けと同水準（IPあたり10回/10分程度）を想定。
+
+### 4.3 Passkey の UX
 
 `autocomplete="webauthn"` を使った conditional UI に対応させ、ログイン画面でメールアドレス入力なしに保存済み Passkey を候補表示できる（Discord/Microsoft ボタンと並べて配置）。
 
@@ -142,6 +148,8 @@ async function requireOrgMember(orgId: string, minRole: Role): Promise<OrgContex
   - 「作成できる組織は 1 人 1 つまで」→ 組織作成の前段でチェック
   - 「admin の招待は owner だけ」→ §6.2 の自前招待ロジック内でチェック
   - 「メンバーの除外は admin(viewerのみ) / owner(owner以外)」→ 除外 API 呼び出しの前段でチェック
+- オーナー移譲は Better Auth 標準 API にはない操作のため、招待(§6.3)と同様に `auth.member` を Next.js のサーバー側コードから直接更新する（旧 owner の役割を `admin` に、指定した相手を `owner` に、同一トランザクションで更新）
+- 組織作成・メンバーのロール変更・除外・招待・オーナー移譲は、成功後に必ず `POST /v1/audit-logs`（03 §2.1）を呼んで記録する
 
 ### 6.2 権限マトリクス
 
