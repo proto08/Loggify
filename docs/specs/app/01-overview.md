@@ -73,7 +73,7 @@ backend/
   pyproject.toml       # uv で管理
 ```
 
-既存の `backend/`（Go の雛形）はこの構成で置き換える。
+既存の `backend/`（Go の雛形）は、この構成（FastAPI）で置き換える。
 
 ## 5. 機能一覧
 

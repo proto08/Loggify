@@ -77,14 +77,14 @@
 
 - [ ] GPS 許可が拒否された場合の挙動。現実装では `(0, 0)` にフォールバックするが、仕様として許容するのか？ 認証を拒否するのか？
 - [ ] Turnstile 検証失敗時の挙動。リトライ可能か？ 回数制限は？
-- [ ] 認証フローのセッション管理。iron-session を引き続き使うか、Go API 側に移すか？ マルチテナント化に伴う変更範囲
+- [ ] 認証フローのセッション管理。iron-session を引き続き使うか、FastAPI 側に移すか？ マルチテナント化に伴う変更範囲
 - [ ] 同一 Discord ID による同時認証（複数タブ等）の制御
 
 ---
 
 ## 4. API 設計
 
-- [ ] Go API のフレームワーク選定が未決（標準 `net/http`？ Echo？ Gin？ Fiber？ Chi？）
+- [x] バックエンドのフレームワーク選定 → FastAPI（Python）に決定（app/README.md 参照）
 - [ ] API エンドポイント一覧が未定義。最低限必要なエンドポイントのリスト:
   - 認証系（login, logout, refresh, passkey register/login）
   - 組織 CRUD
@@ -105,7 +105,7 @@
 ## 5. データベース設計
 
 - [ ] 全テーブルのスキーマ定義（カラム名、データ型、制約、インデックス）
-- [ ] マイグレーション戦略（GORM AutoMigrate？ golang-migrate？ Atlas？）
+- [x] マイグレーション戦略 → `app` スキーマは Alembic、`auth` スキーマは Better Auth のツール（app/04-data-model.md 参照）
 - [ ] ソフトデリート vs ハードデリートの方針（エンティティごとに異なる可能性あり）
 - [ ] ログテーブルのパーティショニング戦略（日付ベース等。永久保存のためデータ量増加への対策）
 - [ ] インデックス戦略（ログの検索性能: Discord ID, IP, 日時, サーバー ID 等）
@@ -161,10 +161,10 @@
 
 - [ ] クレデンシャル（Bot Token, Client Secret 等）の保存方式。DB に平文保存か暗号化か？ 暗号化する場合の鍵管理方式
 - [ ] ダッシュボードの CSRF 対策方式（SPA + Cookie 認証の場合の具体策）
-- [ ] 入力バリデーションのルール・ライブラリ（Go 側: validator？ 自前？）
+- [ ] 入力バリデーションのルール・ライブラリ（FastAPI 側: Pydantic）
 - [ ] 管理操作の監査ログ（Audit Log）の要否。誰がいつ何を変更したかの記録
 - [ ] ダッシュボードへの IP 制限・2FA の要否
-- [ ] SQL インジェクション対策の方針（GORM のパラメータバインディングに依存？ 追加対策？）
+- [ ] SQL インジェクション対策の方針（SQLAlchemy のパラメータバインディングに依存？ 追加対策？）
 - [ ] 機密データ（GPS 座標、IP アドレス等）のログ出力ポリシー（アプリケーションログに含めない等）
 
 ---
@@ -173,7 +173,7 @@
 
 - [ ] Docker Compose のサービス構成詳細（`web` / `api` / `db` 以外に必要なもの: Redis？ Nginx？）
 - [ ] リバースプロキシの選定（Nginx？ Traefik？ Caddy？）と SSL/TLS 終端の設定
-- [ ] サブドメイン構成の詳細（`loggify.com` = フロントエンド、`api.loggify.com` = Go API。他に必要なサブドメインは？）
+- [ ] サブドメイン構成の詳細（`loggify.com` = フロントエンド、`api.loggify.com` = FastAPI（BFF 構成のため非公開の想定）。他に必要なサブドメインは？）
 - [ ] PostgreSQL のバックアップ戦略（頻度、保持期間、リストア手順）
 - [ ] アプリケーション監視・アラート（ヘルスチェック、エラー率、レスポンスタイム等）
 - [ ] アプリケーションログの出力先・形式（構造化ログ？ ログレベル？）
@@ -214,11 +214,11 @@
 
 ## 14. 現行実装からの移行
 
-- [ ] 現行 MVP（Next.js 単体、iron-session、Webhook ログ）から新アーキテクチャ（Next.js + Go API + PostgreSQL）への移行戦略
+- [ ] 現行 MVP（Next.js 単体、iron-session、Webhook ログ）から新アーキテクチャ（Next.js + FastAPI + PostgreSQL）への移行戦略
 - [ ] 現行の単一テナントルーティング（`/api/callback`, `/verify`, `/result/[status]`）からマルチテナントルーティング（`/api/callback/[server-uuid]`, `/verify/[server-uuid]`, `/result/[server-uuid]/[status]`）への移行方針
 - [ ] 現行の `lib/constants.ts`（単一セットの環境変数）からサーバーごとの設定（DB 保存）への移行
 - [ ] 現行の `lib/asn.json`（静的ファイル）から3レイヤー ASN 管理（DB 保存）への移行
-- [ ] Go API プロジェクトのディレクトリ構成・モジュール構造
+- [ ] FastAPI プロジェクトのディレクトリ構成・モジュール構造（app/01-overview.md §4 に構成案あり。既存の Go の雛形 `backend/` の置き換え手順は未定）
 
 ---
 

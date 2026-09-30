@@ -92,7 +92,7 @@ SystemUser (システムユーザー)
 
 #### Discord Bot
 - REST API のみ（永続接続なし）
-- Go API から Bot トークンで Discord REST API を直接呼び出す
+- FastAPI から Bot トークンで Discord REST API を直接呼び出す
 - 用途: ロール付与のみ（MVP）
 
 ### ログ閲覧
@@ -220,7 +220,7 @@ POST /api/verify
 
 ## マルチテナントのデータ分離
 
-- **アプリ層フィルタ**（GORM のクエリスコープで `WHERE org_id = ?` を付与）
+- **アプリ層フィルタ**（SQLAlchemy の repository 層で `WHERE org_id = :org_id` を付与）
 - RLS は規模拡大時に検討
 
 ---
@@ -236,7 +236,7 @@ POST /api/verify
 ## レート制限
 
 - 同一 IP + 同一 Discord ID の両方で制限
-- MVP はインメモリ（Go の sync.Map 等）で実装
+- MVP はプロセス内メモリ（トークンバケット等）で実装
 - 具体的な制限値は運用しながら調整
 
 ---
