@@ -1,6 +1,7 @@
 # Loggify — 仕様ドラフト
 
 > アプリケーション設計は [`app/`](./app/README.md) で具体化した。内容が食い違う場合は `app/` を優先する（変更点は `app/README.md` を参照）。
+> 本書は当初のアイデアを、現行の設計に合わせて更新したもの。詳細は各節に示した `app/` の章を参照する。
 
 ## 概要
 
@@ -21,8 +22,8 @@
 
 - 本システム（ダッシュボード）の利用者・管理者。
 - 組織・サーバーを管理する。
-- 1人のシステムユーザーが作成できる組織は **1つまで**（サブスクリプションで拡張予定）。
-- 他ユーザーの組織には招待で所属できる（将来的には N:M）。
+- 1人のシステムユーザーが作成できる組織は **1つまで**（サブスクリプションで拡張予定）。所属できる組織の数に制限はない。
+- 他ユーザーの組織には招待で所属できる（N:M）。
 
 ### サーバー (Server)
 
@@ -39,16 +40,17 @@
 - 含まれる情報:
   - Discord ユーザー情報（ID, username, global_name, avatar 等）
   - IP アドレス・ISP・ASN・都市・国
-  - GPS 座標・逆ジオコーディング住所
+  - GPS 座標・逆ジオコーディング住所（サーバー設定で収集する場合のみ）
   - 画面サイズ・UserAgent
-  - WebGL / Canvas フィンガープリント
+  - ブラウザフィンガープリント（合成ハッシュ + WebGL / Canvas の生の値）
   - 認証日時
+- IP・GPS・UA・フィンガープリントなどの詳細個人データは、保存期間（既定 90 日）を過ぎると消去し、要約だけを残す（`app/06-privacy.md`）。
 
 ### 組織 (Organization)
 
 - システムユーザーが作成・所有するグループ単位。
 - 複数の Discord サーバーをまとめて管理する。
-- 組織単位でシステムユーザーを招待・権限付与できる。
+- 組織単位でシステムユーザーを招待・権限付与できる。データ分離の境界でもある。
 
 ---
 
@@ -61,34 +63,39 @@ Organization (組織)
                              └── N:1 ── User (Discordユーザー)
 
 SystemUser (システムユーザー)
-  └── 1:N ── Organization (組織)  ※ 将来的には N:M
+  └── N:M ── Organization (組織)  ※ メンバーとして所属。作成（所有）できるのは 1 人 1 組織まで
 ```
 
 ---
 
 ## 機能一覧
 
+機能の ID と MVP の範囲は `app/01-overview.md` §5 を参照。
+
 ### システムユーザー認証
 - Discord OAuth2 ログイン
-- Passkey（WebAuthn）ログイン
+- Microsoft(Entra ID) OAuth2 ログイン
+- Passkey（WebAuthn）はログイン後の追加登録のみ（単体でのログイン・新規登録は不可）
+- 認証基盤は Better Auth（`app/05-auth-session.md`）
 
 ### 組織管理
 - 組織の作成・編集・削除
 - 組織へのサーバー追加・除外
-- メンバー招待・除外
+- メンバー招待・除外・ロール変更・オーナー移譲
 
 #### メンバー招待フロー
-- `owner` / `admin` が招待リンクを発行する
+- `owner` が招待リンクを発行する。`admin` は `viewer` の招待のみ発行できる
 - 発行時に以下を指定:
   - 付与するロール（`admin` / `viewer`）
-  - 有効期限（発行時に選択）
-- リンクは **1回使い切り**（使用後は無効化）
+  - 有効期限（1時間 / 24時間 / 7日）
+- リンクは **1回使い切り**（使用後は無効化）。同時発行数の上限はない
 - 期限切れ・使用済みのリンクはアクセス不可
+- 権限マトリクスと自前実装の理由は `app/05-auth-session.md` §6
 
 ### サーバー管理
-- サーバーの登録（Bot トークン・Webhook・ロール ID 等の設定）
-- サーバーごとの認証設定（VPN ブロック ON/OFF 等）
-- 通知チャネルの設定（Discord Webhook / Telegram Bot）
+- サーバーの登録（Bot トークン・Role ID・OAuth アプリの Client ID / Secret 等の設定）
+- サーバーごとの認証設定（VPN ブロック ON/OFF、GPS の収集、保存期間、メールアドレスの収集）
+- 通知チャネルの設定（Discord Webhook。Telegram は Post-MVP）
 
 #### Discord Bot
 - REST API のみ（永続接続なし）
@@ -99,28 +106,26 @@ SystemUser (システムユーザー)
 - サーバー別・組織横断での認証ログ一覧
 - ユーザー検索（Discord ID / IP / 国 等でフィルタ）
 - ログ詳細表示
+- Discord ID を指定した個人データの削除
 
 ### VPN ASN リスト
 
-ASN ベースの VPN/プロキシ検出は、以下の3レイヤー継承モデルで管理する。
+ASN ベースの VPN/プロキシ検出は、以下の3レイヤーで管理する。
 
 ```
 Loggify デフォルト ASN リスト（システム管理）
-  ↓ 継承
-Organization レベルのルール（追加ブロック / 許可）
-  ↓ 継承
-Server レベルのルール（追加ブロック / 許可）
+Organization レベルのルール（許可 / ブロック）
+Server レベルのルール（許可 / ブロック）
 ```
 
-**評価順序:**
+**評価順序（より具体的なスコープが優先）:**
 
-1. Loggify デフォルトリストでブロック対象か確認
-2. 組織の「許可リスト」に含まれていれば通す
-3. 組織の「追加ブロックリスト」に含まれていればブロック
-4. サーバーの「許可リスト」に含まれていれば通す
-5. サーバーの「追加ブロックリスト」に含まれていればブロック
+1. サーバールールに一致 → その action（許可 / ブロック）
+2. 組織ルールに一致 → その action
+3. デフォルトリストに一致 → ブロック
+4. どれにも一致しない → 許可
 
-組織ルールとサーバールールの override 方針は TODO 参照。
+組織でブロックした ASN を、サーバーで許可に上書きできる。組織・サーバーは常に最新のデフォルトリストを参照する（`app/05-auth-session.md` §9）。
 
 ---
 
@@ -130,48 +135,46 @@ Server レベルのルール（追加ブロック / 許可）
 
 | 項目 | 説明 |
 |---|---|
-| Discord Guild ID | 対象サーバーの ID |
+| Discord Guild ID | 対象サーバーの ID（有効なサーバー間で一意） |
 | Discord Client ID | OAuth2 アプリの Client ID |
 | Discord Client Secret | OAuth2 アプリの Client Secret |
 | Discord Bot Token | ロール付与用 Bot のトークン |
 | Discord Role ID | 認証後に付与するロール |
-| Discord Webhook URL | ログ通知先 Webhook |
+| Discord Webhook URL | ログ通知先 Webhook（任意） |
 
-登録後、Loggify が内部 UUID を生成し、以下の redirect_uri をシステムユーザーに発行する:
+登録後、Loggify が内部 UUID（`server_id`）を発行し、以下を案内する:
 
 ```
-https://loggify.com/api/callback/[server-uuid]
+redirect_uri: https://loggify.com/api/verify/[server-id]/callback   （Discord Developer Portal に登録する）
+認証開始 URL: https://loggify.com/v/[server-id]                       （Discord サーバーに貼る）
 ```
 
-システムユーザーはこの URI を自前の Discord OAuth2 アプリに登録し、
-認証 URL を Discord サーバーに貼る。
+登録フロー内で Bot 招待リンクを生成・表示し、Bot がギルドに参加済みか API で確認する。確認が通るまでは下書き（`draft`）のままで、認証は使えない（`app/02-screens.md` §2.3）。
 
 ### 認証フロー（マルチテナント）
 
 ```
-[Discord サーバーに貼る OAuth2 URL]
-https://discord.com/oauth2/authorize
-  ?client_id=[their-client-id]
-  &redirect_uri=https://loggify.com/api/callback/[server-uuid]
-  &scope=identify+email
-  &response_type=code
+[Discord サーバーに貼る URL]
+https://loggify.com/v/[server-id]
+  → 収集データの説明・同意（同意しない場合は進めない）
 
-↓ ユーザーが Discord で認証
+GET /api/verify/[server-id]/start
+  → 認証セッションを作成し、Discord の authorize URL（state 付き）へリダイレクト
 
-GET /api/callback/[server-uuid]?code=...
-  → server-uuid からサーバー設定を取得
-  → code を当該サーバーの Client ID/Secret でトークン交換
-    （Discord が client_id と code の対応を検証するため、
-      UUID の改ざんはトークン交換失敗として弾かれる）
-  → /verify/[server-uuid] にリダイレクト
+GET /api/verify/[server-id]/callback?code=...&state=...
+  → 当該サーバーの Client ID / Secret で code を交換
+  → Discord ユーザー情報を取得。アクセストークン・リフレッシュトークンは保存せず破棄
+  → /verify/[server-id] にリダイレクト
 
-GET /verify/[server-uuid]
-  → GPS・画面サイズ・ブラウザ指紋収集 + Turnstile CAPTCHA
+GET /verify/[server-id]
+  → GPS（設定による）・画面サイズ・ブラウザフィンガープリントの収集 + hCaptcha
 
-POST /api/verify
-  → VPN チェック・ログ保存・ロール付与・Webhook 送信
-  → /result/[server-uuid]/[status] にリダイレクト
+complete（Server Action）
+  → hCaptcha 検証・VPN チェック・ロール付与・ログ保存・通知送信
+  → /result/[server-id]/[status] にリダイレクト
 ```
+
+詳細は `app/05-auth-session.md` §10。サイト全体の前段には Cloudflare（WAF・Under Attack Mode 常時 ON）を置く。
 
 ---
 
@@ -182,62 +185,60 @@ POST /api/verify
 | Discord Webhook | MVP |
 | Telegram Bot | Post-MVP |
 
-チャネルはサーバー設定ごとに有効/無効を切り替えられる。
-通知はログごとに即時送信。送信失敗時はリトライなし（ログ本体は DB に保存済みのためデータ損失なし）。
+チャネルは `notification_channels` に分離し、チャネル単位で有効/無効を切り替えられる。
+通知はログごとに即時送信（同期）。送信失敗時はリトライなし（ログ本体は DB に保存済みのためデータ損失なし）。失敗はログの `notify_status` に記録する。
+通知には認証結果・国・VPN 判定・Discord ユーザー情報・メールアドレス（収集時）・ダッシュボードへのリンクのみを含め、IP・GPS・住所・UA・フィンガープリントは含めない。
 
 ---
 
 ## セッション管理
 
-- Access Token（短命）+ Refresh Token（長命）の2トークン構成
-- 初回登録は Discord OAuth2 必須。Passkey は追加の認証手段として後から登録
-- どちらの認証方法でも同じ JWT を発行
-
----
-
-## サーバー登録フローの補足
-
-- 登録フロー内で Bot 招待リンクを生成・表示し、Bot がギルドに参加済みか API で確認
-- Turnstile のサイトキー・シークレットキーは Loggify 共通
+- システムユーザーは Better Auth のセッション（DB セッション + `HttpOnly` Cookie）で管理する。Refresh Token は使わない
+- Passkey は追加の認証手段として、ログイン後に登録する
+- どちらの方式でログインしても、同じセッションになる
+- Next.js が FastAPI を呼ぶときは、Better Auth の JWT プラグインで都度発行した短命 JWT（有効期限 30 秒。`sub` / `org_id` / `role`）を `Authorization: Bearer` で渡し、FastAPI は JWKS で署名を検証する（`app/05-auth-session.md` §3）
 
 ---
 
 ## ログの保持・削除ポリシー
 
-- ログは **永久保存**
-- サーバー削除時、ログは削除しない（サーバーとの紐付けは切れるがデータは保持）
-- **システム管理者のみ**が全サーバー・全組織のログを閲覧可能
+- 詳細個人データ（IP・位置・UA・フィンガープリント等）は、サーバーごとの保存期間（既定 90 日）を過ぎたら消去する。認証結果・国・ASN・日時などの要約は残す
+- サーバー削除時は論理削除とし、30 日後にログを物理削除する
+- 組織のメンバー（viewer 以上）は自組織のサーバーのログを閲覧できる。システム管理者は全組織のログを閲覧できるが、閲覧はすべて監査ログに記録する
+- 個人データの削除は、組織による Discord ID 指定の削除、またはエンドユーザーから Loggify への依頼で行う
+
+詳細は `app/06-privacy.md`。
 
 ---
 
 ## フロントエンド ↔ API 間の通信
 
-- **REST API**
-- 認証トークンは **Cookie（HttpOnly）** で受け渡し
-- サブドメイン構成（`api.loggify.com`）、同一ドメイン CORS
+- **BFF 構成**: ブラウザは Next.js（`loggify.com`）とだけ通信する。FastAPI はインターネットに公開しない（内部 ingress のみ）
+- FastAPI は REST（`/v1`）。呼び出しは Next.js のサーバー側（Server Components / Server Actions / Route Handlers）から行う
+- ブラウザと Next.js の間は Better Auth の Cookie（`HttpOnly; Secure; SameSite=Lax`）。CORS の設定は不要
 
 ---
 
 ## マルチテナントのデータ分離
 
-- **アプリ層フィルタ**（SQLAlchemy の repository 層で `WHERE org_id = :org_id` を付与）
-- RLS は規模拡大時に検討
+- **アプリ層フィルタ**（SQLAlchemy の repository 層で `WHERE org_id = :org_id AND id = :id` を必ず付与）
+- **加えて `app` スキーマに Row Level Security を導入**（アプリのバグによる他組織データの漏えいを DB 側でも防ぐ）。`org_id` は JWT のクレームから取得し、トランザクションごとに設定する
 
 ---
 
 ## エラー・結果画面
 
-- `/result/[server-uuid]/[status]` でサーバーごとにルーティング
-- サーバー設定からサーバー名・ロゴを表示
+- `/result/[server-id]/[status]` でサーバーごとにルーティング
+- サーバー設定からサーバー名・アイコンを表示
 - カスタムメッセージは将来対応
 
 ---
 
 ## レート制限
 
-- 同一 IP + 同一 Discord ID の両方で制限
-- MVP はプロセス内メモリ（トークンバケット等）で実装
-- 具体的な制限値は運用しながら調整
+- 同一 IP、および同一サーバー + 同一 Discord ID の両方で制限
+- MVP はプロセス内メモリ（トークンバケット）で実装。レプリカを増やす段階で Redis 等に移す
+- 具体的な制限値は運用しながら調整（初期値は `app/03-api.md` §3）
 
 ---
 
@@ -249,30 +250,25 @@ POST /api/verify
 
 ---
 
-## 招待リンク
+## 決定事項の参照先
 
-- 有効期限の選択肢: **1時間 / 24時間 / 7日**
-- 同時発行数の上限: **なし**（1回使い切りのためリスク低い）
+以前この TODO に書いていた項目は、`app/` で決定した。
 
----
+| 項目 | 参照先 |
+|---|---|
+| RBAC（3 ロールのマトリクス） | `app/05-auth-session.md` §6.2 |
+| ダッシュボード画面構成 | `app/02-screens.md` |
+| ASN ルールの優先順位・デフォルトリストの更新 | `app/05-auth-session.md` §9 |
+| セッション管理・JWT | `app/05-auth-session.md` §3, §5 |
+| サーバー登録フロー（Bot 招待の誘導 UI、CAPTCHA のキーは Loggify 共通） | `app/02-screens.md` §2.3 |
+| ログの保持・削除 | `app/06-privacy.md` |
+| 招待リンクの仕様 | `app/05-auth-session.md` §6.3 |
+| 通知の設計 | `app/05-auth-session.md` §10.3, `app/06-privacy.md` §4 |
+| フロントエンド ↔ API の通信、データ分離 | `app/05-auth-session.md` §1, `app/04-data-model.md` §5 |
 
-## TODO
+CAPTCHA は hCaptcha を使う。サイトキーとシークレットキーは Loggify 共通で、サーバーごとには持たない。
 
-- **RBAC 詳細設計**: 固定3ロール `owner`（1人のみ）/ `admin` / `viewer` のパーミッションマトリクス・実装方針
-- **ダッシュボード画面構成**: ワイヤーフレーム・ページ設計
-- **VPN ASN リストの override ルール**: 組織ルールがサーバーに対して強制力を持つか（サーバー側で許可不可）、あくまで上書き可能な参考値にするか。デフォルトリスト更新時にサーバー・組織へ自動反映するかスナップショット固定にするか
+## 未決事項
+
 - **サブスクリプションプラン設計**: 無料 / 有料プランの区分、組織数・サーバー数の上限拡張、その他の差別化要素
-
-- **RBAC 詳細設計**: 固定3ロール `owner`（1人のみ）/ `admin` / `viewer` のパーミッションマトリクス・実装方針
-- **ダッシュボード画面構成**: ワイヤーフレーム・ページ設計
-- **セッション管理**: JWT 有効期限とリフレッシュ戦略（refresh token を使うか再ログインか）、Passkey と Discord OAuth2 のセッション統合方法
-- **サーバー登録フローの詳細**: Bot 招待の誘導 UI の有無、Turnstile サイトキー・シークレットキーをサーバーごとに持つか Loggify 共通にするか
-- **ログの保持期間・削除ポリシー**: 永久保存か期限付きか、サーバー削除時のログ扱い（カスケード削除 or 保留）
-- **VPN ASN リストの override ルール**: 組織ルールがサーバーに対して強制力を持つか（サーバー側で許可不可）、あくまで上書き可能な参考値にするか。デフォルトリスト更新時にサーバー・組織へ自動反映するかスナップショット固定にするか
-- **招待リンクの仕様詳細**: 有効期限の選択肢（具体的な値）、同時に発行できるリンク数の上限
-- **Webhook / 通知の設計**: ログごとに即時送信かバッチか、送信失敗時のリトライ・エラーハンドリング
-- **フロントエンド ↔ API 間の通信**: REST か GraphQL か、認証トークンの受け渡し方法（Cookie vs Authorization ヘッダー）、CORS 設定
-- **マルチテナントのデータ分離**: PostgreSQL の Row-Level Security を使うかアプリ層でフィルタするか
-- **エラー・結果画面**: `/result/[status]` をマルチテナントで流用するか、サーバーごとのカスタムメッセージ設定の有無
-- **レート制限・スパム対策**: 同一 IP・同一 Discord ID による連続認証の制限方針
-- **組織・サーバーの上限**: システムユーザーが作れる組織数の上限、1組織に登録できるサーバー数の上限
+- そのほかの未決事項は [`docs/todo.md`](../todo.md) にまとめている
