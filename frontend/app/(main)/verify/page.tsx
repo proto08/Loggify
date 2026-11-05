@@ -1,15 +1,15 @@
 "use client";
 
+import { ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Turnstile } from "next-turnstile";
+import { Suspense, useState } from "react";
 import { Button } from "@/components/shared/button";
 import { TURNSTILE_SITE_KEY } from "@/lib/constants";
 import { useCsrfToken } from "@/lib/hooks/csrf-token-hooks";
 import { useScreenSize } from "@/lib/hooks/screen-size-hooks";
 import { useUserLocation } from "@/lib/hooks/user-location-hooks";
 import { useBrowserFingerprint } from "@/lib/hooks/webgl-fingerprint-hooks";
-import { ShieldCheck } from "lucide-react";
-import { Turnstile } from "next-turnstile";
-import { useRouter } from "next/navigation";
-import { Suspense, useState } from "react";
 
 export default function Page() {
   return (

@@ -1,6 +1,6 @@
-import { Button } from "@/components/shared/button";
 import Link from "next/link";
 import React from "react";
+import { Button } from "@/components/shared/button";
 
 export default async function Header() {
   return (

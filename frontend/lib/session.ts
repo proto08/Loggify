@@ -1,5 +1,5 @@
-import { SESSION_PASSWORD } from "@/lib/constants";
 import type { IronSession, SessionOptions } from "iron-session";
+import { SESSION_PASSWORD } from "@/lib/constants";
 
 export interface SessionData {
   csrfToken?: string;

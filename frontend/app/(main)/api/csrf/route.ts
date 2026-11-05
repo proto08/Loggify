@@ -1,6 +1,6 @@
-import { type SessionData, clearSession, sessionOptions } from "@/lib/session";
 import { getIronSession } from "iron-session";
 import { type NextRequest, NextResponse } from "next/server";
+import { clearSession, type SessionData, sessionOptions } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
   const response = new NextResponse();

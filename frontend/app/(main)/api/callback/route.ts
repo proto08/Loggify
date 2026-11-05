@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
-import { isHosting } from "@/lib/functions/ip-check";
-import { type SessionData, clearSession, sessionOptions } from "@/lib/session";
 import { getIronSession } from "iron-session";
 import { type NextRequest, NextResponse } from "next/server";
+import { isHosting } from "@/lib/functions/ip-check";
+import { clearSession, type SessionData, sessionOptions } from "@/lib/session";
 
 function createRedirectResponse(path: string, res: NextResponse): NextResponse {
   const redirectUrl = new URL(path, process.env.BASE_URL);

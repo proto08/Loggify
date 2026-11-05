@@ -1,10 +1,10 @@
+import { getIronSession } from "iron-session";
+import { type NextRequest, NextResponse } from "next/server";
 import { assignRole } from "@/lib/functions/assign-role";
 import { getUserInfo, logger } from "@/lib/functions/logger";
 import { getUserToken, validateToken } from "@/lib/functions/verify";
-import { type SessionData, clearSession, sessionOptions } from "@/lib/session";
+import { clearSession, type SessionData, sessionOptions } from "@/lib/session";
 import type { DiscordUser } from "@/lib/types";
-import { getIronSession } from "iron-session";
-import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const res = new NextResponse();

@@ -31,7 +31,7 @@
     "baseline-browser-mapping": "^2.11.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2",
     "@tailwindcss/postcss": "^4.3.4",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
